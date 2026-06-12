@@ -3,9 +3,10 @@ package com.eliranabu.falafelrush.ui.game
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -17,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -25,6 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
+import kotlin.math.max
 import kotlin.math.sin
 
 // SCREEN 2: ACTIVE GAMEPLAY SCREEN (THE RUSH)
@@ -42,6 +46,7 @@ fun GameplayScreen(viewModel: GameViewModel, state: GameUiState) {
         }
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -133,19 +138,26 @@ fun GameplayScreen(viewModel: GameViewModel, state: GameUiState) {
             )
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Draw customers cards list
-            Row(
+            // Draw customers cards list — LazyRow so neighbors slide smoothly when one leaves
+            LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
                     .padding(vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                state.activeCustomers.forEachIndexed { index, customer ->
-                    CustomerVisualCard(
-                        customer = customer,
-                        isNextInQueue = index == 0
-                    )
+                // Exit-animating customers (served slide up / angry storm off left)
+                items(state.departingCustomers, key = { "dep-${it.customer.id}" }) { dep ->
+                    Box(modifier = Modifier.animateItem()) {
+                        DepartingCustomerCard(dep)
+                    }
+                }
+                itemsIndexed(state.activeCustomers, key = { _, c -> c.id }) { index, customer ->
+                    Box(modifier = Modifier.animateItem()) {
+                        CustomerVisualCard(
+                            customer = customer,
+                            isNextInQueue = index == 0
+                        )
+                    }
                 }
             }
         }
@@ -191,6 +203,98 @@ fun GameplayScreen(viewModel: GameViewModel, state: GameUiState) {
             onTrashClicked = { viewModel.tapTrashPita() },
             onServeClicked = { viewModel.tapServePita() }
         )
+    }
+
+    // GOLDEN-HOUR VIGNETTE: warm pulsing screen-border glow during rush hour.
+    // Draw-only overlay — never intercepts touch input.
+    if (state.isRushHour) {
+        val vignettePulse = rememberInfiniteTransition(label = "RushVignette")
+        val vignetteAlpha by vignettePulse.animateFloat(
+            initialValue = 0.15f,
+            targetValue = 0.45f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(700, easing = EaseInOutSine),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "VignetteAlpha"
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .drawWithContent {
+                    drawContent()
+                    drawRect(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Transparent,
+                                FalafelRushTheme.DeepGold.copy(alpha = vignetteAlpha),
+                                FalafelRushTheme.HotOrange.copy(alpha = vignetteAlpha)
+                            ),
+                            center = Offset(size.width / 2f, size.height / 2f),
+                            radius = max(size.width, size.height) * 0.72f
+                        )
+                    )
+                }
+        )
+    }
+    }
+}
+
+// Card wrapper that choreographs a customer's exit:
+// SERVED — float up + fade with a rising "+🪙" reward indicator
+// ANGRY  — red flash, 😡 bubble, rapid slide-left off screen
+@Composable
+fun DepartingCustomerCard(dep: DepartingCustomer) {
+    val offsetX = remember { Animatable(0f) }
+    val offsetY = remember { Animatable(0f) }
+    val cardAlpha = remember { Animatable(1f) }
+    val coinFloatY = remember { Animatable(0f) }
+
+    LaunchedEffect(dep.customer.id) {
+        when (dep.reason) {
+            DepartReason.SERVED -> {
+                launch { offsetY.animateTo(-160f, tween(550, easing = EaseOut)) }
+                launch { coinFloatY.animateTo(-110f, tween(650, easing = EaseOut)) }
+                cardAlpha.animateTo(0f, tween(550, delayMillis = 100))
+            }
+            DepartReason.ANGRY -> {
+                launch { offsetX.animateTo(-900f, tween(480, easing = EaseInBack)) }
+                cardAlpha.animateTo(0f, tween(480, delayMillis = 60))
+            }
+        }
+    }
+
+    Box {
+        Box(
+            modifier = Modifier.graphicsLayer {
+                translationX = offsetX.value
+                translationY = offsetY.value
+                alpha = cardAlpha.value
+            }
+        ) {
+            CustomerVisualCard(
+                customer = dep.customer,
+                isNextInQueue = false,
+                departReason = dep.reason
+            )
+        }
+
+        // Floating "+🪙 amount" reward indicator rising above the served card
+        if (dep.reason == DepartReason.SERVED) {
+            Text(
+                text = "+🪙 ${dep.earned}",
+                color = FalafelRushTheme.BrightGold,
+                fontWeight = FontWeight.Black,
+                fontSize = 20.sp,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .graphicsLayer {
+                        translationY = coinFloatY.value
+                        alpha = (1f - (-coinFloatY.value / 130f)).coerceIn(0f, 1f)
+                    }
+            )
+        }
     }
 }
 

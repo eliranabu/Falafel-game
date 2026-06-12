@@ -37,6 +37,17 @@ fun PitaAssemblyWorkspace(
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
     val isDraggingActive = draggingIng != null
 
+    // One-shot success pulse: gold flash + scale pop whenever an ingredient lands
+    val dropPulse = remember { Animatable(0f) }
+    var lastIngredientCount by remember { mutableStateOf(preparedIngredients.size) }
+    LaunchedEffect(preparedIngredients.size) {
+        if (preparedIngredients.size > lastIngredientCount) {
+            dropPulse.snapTo(1f)
+            dropPulse.animateTo(0f, animationSpec = tween(280, easing = EaseOut))
+        }
+        lastIngredientCount = preparedIngredients.size
+    }
+
     // Glow scale for drop target when dragging
     val targetPulse = rememberInfiniteTransition(label = "TargetPulse")
     val borderAlpha by targetPulse.animateFloat(
@@ -69,10 +80,11 @@ fun PitaAssemblyWorkspace(
                 )
                 .border(
                     2.dp,
-                    if (isDraggingActive) {
-                        FalafelRushTheme.NeonCyan.copy(alpha = borderAlpha)
-                    } else {
-                        Color.White.copy(alpha = 0.08f)
+                    when {
+                        // Gold success flash takes priority — distinct from the cyan drag glow
+                        dropPulse.value > 0.02f -> FalafelRushTheme.DeepGold.copy(alpha = dropPulse.value)
+                        isDraggingActive -> FalafelRushTheme.NeonCyan.copy(alpha = borderAlpha)
+                        else -> Color.White.copy(alpha = 0.08f)
                     },
                     RoundedCornerShape(20.dp)
                 )
@@ -103,7 +115,9 @@ fun PitaAssemblyWorkspace(
                 verticalArrangement = Arrangement.Center
             ) {
                 Box(
-                    modifier = Modifier.size(width = 240.dp, height = 135.dp),
+                    modifier = Modifier
+                        .size(width = 240.dp, height = 135.dp)
+                        .scale(1f + dropPulse.value * 0.08f),
                     contentAlignment = Alignment.BottomCenter
                 ) {
                     // Curved custom 3D Pita Wrapper base drawn using Canvas offsets

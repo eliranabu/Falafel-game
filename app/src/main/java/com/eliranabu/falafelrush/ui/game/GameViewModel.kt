@@ -114,6 +114,16 @@ data class GameCustomer(
     val type: CustomerType = CustomerType.STUDENT
 )
 
+// Reason a customer leaves the queue — drives the exit choreography in the UI
+enum class DepartReason { SERVED, ANGRY }
+
+// Customer that has left the queue but is still animating out (~700ms window)
+data class DepartingCustomer(
+    val customer: GameCustomer,
+    val reason: DepartReason,
+    val earned: Int = 0
+)
+
 // Floating particle models for 2026 style physical sensory responses
 data class GameParticle(
     val id: String = UUID.randomUUID().toString(),
@@ -140,6 +150,7 @@ data class GameUiState(
     val activeEvent: DailyEvent = DailyEvent.NORMAL,
     val dayTimeRemainingSec: Int = 120, // 2 minutes
     val activeCustomers: List<GameCustomer> = emptyList(),
+    val departingCustomers: List<DepartingCustomer> = emptyList(),
     val preparedIngredients: List<Ingredient> = emptyList(), // what user added
     val comboStreak: Int = 0,
     val isRushHour: Boolean = false, // Rush hour triggers intense events
@@ -319,6 +330,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 activeEvent = nextDayEvent,
                 dayTimeRemainingSec = 120,
                 activeCustomers = emptyList(),
+                departingCustomers = emptyList(),
                 preparedIngredients = emptyList(),
                 comboStreak = 0,
                 isRushHour = false,
@@ -385,7 +397,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 delay(100) // update patience/timers frequently for fluid movement at 60fps
                 
                 // Decay patience of existing customers
-                var customerLeft = false
+                val leavers = mutableListOf<GameCustomer>()
                 val updatedCustomers = _uiState.value.activeCustomers.mapNotNull { customer ->
                     // Speeds up decay unless patience/speed upgrade level is high
                     val upgradeSlowdown = 1.0f + (_uiState.value.saveState.patienceUpgradeLevel * 0.15f)
@@ -393,9 +405,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     // Decay scale is affected by the customer archetype & the active Daily Event modifier
                     val decayRate = (0.1f * customer.type.patienceDecayScale) / (customer.maxPatienceSec * upgradeSlowdown * eventPatienceMod)
                     val newPatience = customer.currentPatience - decayRate
-                    
+
                     if (newPatience <= 0f) {
-                        customerLeft = true
+                        leavers += customer
                         _uiState.update { it.copy(impatientLeftToday = it.impatientLeftToday + 1, comboStreak = 0) }
                         triggerScreenShake(7f)
                         null // Customer walks away angry
@@ -403,13 +415,21 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                         customer.copy(currentPatience = newPatience)
                     }
                 }
-                
-                if (customerLeft) {
+
+                if (leavers.isNotEmpty()) {
                     soundManager.play(SoundId.ANGRY_BUZZ)
                     showFeedback("אוי לא! לקוח התייאש מההמתנה ועזב! 😡")
                 }
 
-                _uiState.update { it.copy(activeCustomers = updatedCustomers) }
+                _uiState.update {
+                    it.copy(
+                        activeCustomers = updatedCustomers,
+                        departingCustomers = it.departingCustomers + leavers.map { c ->
+                            DepartingCustomer(c.copy(currentPatience = 0f), DepartReason.ANGRY)
+                        }
+                    )
+                }
+                leavers.forEach { c -> scheduleDepartureCleanup(c.id) }
 
                 // Potentially spawn new customers up to limits
                 val marketingLevel = _uiState.value.saveState.marketingUpgradeLevel
@@ -595,6 +615,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             _uiState.update {
                 it.copy(
                     activeCustomers = customers.drop(1), // remove served
+                    departingCustomers = it.departingCustomers +
+                            DepartingCustomer(targetCustomer, DepartReason.SERVED, totalEarned),
                     preparedIngredients = emptyList(), // clear workspace
                     servedCountToday = it.servedCountToday + 1,
                     revenueEarnedToday = it.revenueEarnedToday + totalEarned,
@@ -602,6 +624,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     feedbackMessage = "סרביס מושלם! ${targetCustomer.name} נהנה ונתן טיפ שווה של $totalEarned מטבעות! 💰"
                 )
             }
+            scheduleDepartureCleanup(targetCustomer.id)
 
             // Explode real physics-based particles matching customer type!
             soundManager.play(SoundId.SERVE_ARPEGGIO)
@@ -673,6 +696,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             _uiState.update { it.copy(generatedTodayReviews = reviewList) }
+        }
+    }
+
+    // Remove a departing customer from the exit-animation layer after it finishes
+    private fun scheduleDepartureCleanup(customerId: String) {
+        viewModelScope.launch {
+            delay(700)
+            _uiState.update {
+                it.copy(departingCustomers = it.departingCustomers.filterNot { d -> d.customer.id == customerId })
+            }
         }
     }
 

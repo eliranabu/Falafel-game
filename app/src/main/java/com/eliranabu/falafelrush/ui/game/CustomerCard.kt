@@ -27,6 +27,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+// Shared panic threshold: below this patience fraction the customer shakes,
+// the bar flashes and the card border glows red.
+const val PANIC_THRESHOLD = 0.20f
+
 // Sub-Component: High fidelity vector-drawn animated Customer Figure character
 @Composable
 fun HumanCharacterSillhouette(customer: GameCustomer, modifier: Modifier = Modifier) {
@@ -35,19 +39,19 @@ fun HumanCharacterSillhouette(customer: GameCustomer, modifier: Modifier = Modif
     // Shaking physics if patience is low (anger)
     val shakeTransition = rememberInfiniteTransition(label = "ShakeTransition")
     val shakeX by shakeTransition.animateFloat(
-        initialValue = -1.5f,
-        targetValue = 1.5f,
+        initialValue = -2f,
+        targetValue = 2f,
         animationSpec = infiniteRepeatable(
-            animation = tween(80, easing = LinearEasing),
+            animation = tween(60, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "ShakeX"
     )
     val shakeY by shakeTransition.animateFloat(
-        initialValue = -1.2f,
-        targetValue = 1.2f,
+        initialValue = -1.5f,
+        targetValue = 1.5f,
         animationSpec = infiniteRepeatable(
-            animation = tween(70, easing = LinearEasing),
+            animation = tween(55, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "ShakeY"
@@ -74,9 +78,9 @@ fun HumanCharacterSillhouette(customer: GameCustomer, modifier: Modifier = Modif
         label = "Sway"
     )
 
-    val appliedTranslationX = if (patience <= 0.25f) shakeX else 0f
-    val appliedTranslationY = (if (patience <= 0.25f) shakeY else 0f) + breatheY
-    val appliedRotation = if (patience <= 0.25f) (shakeX * 1.5f) else swayAngle
+    val appliedTranslationX = if (patience <= PANIC_THRESHOLD) shakeX else 0f
+    val appliedTranslationY = (if (patience <= PANIC_THRESHOLD) shakeY else 0f) + breatheY
+    val appliedRotation = if (patience <= PANIC_THRESHOLD) (shakeX * 1.5f) else swayAngle
 
     Box(
         modifier = modifier
@@ -363,7 +367,11 @@ fun HumanCharacterSillhouette(customer: GameCustomer, modifier: Modifier = Modif
 
 // Sub-Component: Overhauled Customer Card with dynamic standing characters & Hebrew speech bubbles
 @Composable
-fun CustomerVisualCard(customer: GameCustomer, isNextInQueue: Boolean) {
+fun CustomerVisualCard(
+    customer: GameCustomer,
+    isNextInQueue: Boolean,
+    departReason: DepartReason? = null
+) {
     val infiniteTransition = rememberInfiniteTransition(label = "CustomerPulse")
 
     // Scale pulse for next in line customer
@@ -377,10 +385,24 @@ fun CustomerVisualCard(customer: GameCustomer, isNextInQueue: Boolean) {
         label = "BreatheScale"
     )
 
-    val borderGlowColor = if (isNextInQueue) {
-        if (customer.isVip) FalafelRushTheme.DeepGold else FalafelRushTheme.NeonCyan
-    } else {
-        Color.White.copy(alpha = 0.05f)
+    val isPanicking = customer.currentPatience <= PANIC_THRESHOLD && departReason == null
+
+    // Flashing neon warning while the patience bar is in its final stretch
+    val panicFlash by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(250, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "PanicFlash"
+    )
+
+    val borderGlowColor = when {
+        departReason == DepartReason.ANGRY -> FalafelRushTheme.CrimsonRed
+        isPanicking -> FalafelRushTheme.CrimsonRed.copy(alpha = 0.5f + 0.5f * panicFlash)
+        isNextInQueue -> if (customer.isVip) FalafelRushTheme.DeepGold else FalafelRushTheme.NeonCyan
+        else -> Color.White.copy(alpha = 0.05f)
     }
 
     // Comprehensive column representing the active character standing in queue
@@ -404,17 +426,26 @@ fun CustomerVisualCard(customer: GameCustomer, isNextInQueue: Boolean) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Hebrew quote phrase
-                Text(
-                    text = "\"${customer.phrase}\"",
-                    color = Color(0xFF2C2C2C),
-                    fontSize = 9.sp,
-                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    maxLines = 3,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                // Hebrew quote phrase — replaced by rage when storming off
+                if (departReason == DepartReason.ANGRY) {
+                    Text(
+                        text = "😡😡😡",
+                        fontSize = 16.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    Text(
+                        text = "\"${customer.phrase}\"",
+                        color = Color(0xFF2C2C2C),
+                        fontSize = 9.sp,
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        maxLines = 3,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(6.dp))
 
@@ -558,9 +589,12 @@ fun CustomerVisualCard(customer: GameCustomer, isNextInQueue: Boolean) {
 
                 Spacer(modifier = Modifier.height(5.dp))
 
-                // Patience meter progress bar
+                // Patience meter progress bar (flashing red-white neon in the panic zone)
                 val patience = customer.currentPatience
                 val patienceColor = when {
+                    isPanicking -> androidx.compose.ui.graphics.lerp(
+                        FalafelRushTheme.CrimsonRed, Color.White, panicFlash * 0.7f
+                    )
                     patience > 0.6f -> FalafelRushTheme.GlowGreen
                     patience > 0.3f -> FalafelRushTheme.DeepGold
                     else -> FalafelRushTheme.CrimsonRed
