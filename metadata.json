@@ -1,0 +1,6 @@
+{
+  "name": "Falafel Rush",
+  "description": "משחק מובייל מהיר וממכר בהגשת פלאפל, עם שדרוגים, לקוחות הומוריסטיים וביקורות AI משעשעות.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
