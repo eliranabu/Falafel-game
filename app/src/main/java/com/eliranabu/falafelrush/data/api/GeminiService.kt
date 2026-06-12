@@ -1,8 +1,8 @@
-package com.example.data.api
+package com.eliranabu.falafelrush.data.api
 
 import android.util.Log
-import com.example.BuildConfig
-import com.example.data.database.CustomerReview
+import com.eliranabu.falafelrush.BuildConfig
+import com.eliranabu.falafelrush.data.database.CustomerReview
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType

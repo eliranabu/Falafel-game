@@ -1,4 +1,4 @@
-package com.example
+package com.eliranabu.falafelrush
 
 import org.junit.Assert.*
 import org.junit.Test

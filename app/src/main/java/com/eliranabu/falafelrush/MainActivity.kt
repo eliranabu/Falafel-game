@@ -1,4 +1,4 @@
-package com.example
+package com.eliranabu.falafelrush
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -8,9 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.ui.game.FalafelRushApp
-import com.example.ui.game.GameViewModel
-import com.example.ui.theme.MyApplicationTheme
+import com.eliranabu.falafelrush.ui.game.FalafelRushApp
+import com.eliranabu.falafelrush.ui.game.GameViewModel
+import com.eliranabu.falafelrush.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

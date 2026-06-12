@@ -1,14 +1,14 @@
-package com.example.ui.game
+package com.eliranabu.falafelrush.ui.game
 
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.data.api.GeminiService
-import com.example.data.database.AppDatabase
-import com.example.data.database.CustomerReview
-import com.example.data.database.GameRepository
-import com.example.data.database.GameSaveState
+import com.eliranabu.falafelrush.data.api.GeminiService
+import com.eliranabu.falafelrush.data.database.AppDatabase
+import com.eliranabu.falafelrush.data.database.CustomerReview
+import com.eliranabu.falafelrush.data.database.GameRepository
+import com.eliranabu.falafelrush.data.database.GameSaveState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
