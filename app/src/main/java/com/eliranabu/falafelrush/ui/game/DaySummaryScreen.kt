@@ -23,26 +23,6 @@ import kotlinx.coroutines.delay
 // SCREEN 3: DAY SUMMARY LEDGER & REVIEWS
 @Composable
 fun DaySummaryScreen(viewModel: GameViewModel, state: GameUiState) {
-    var logsTickerIndex by remember { mutableStateOf(0) }
-
-    val funnyLoadingPhrases = listOf(
-        "קוצץ עגבניות בצורה קוונטית...",
-        "מזהה שאריות טחינה על הגג...",
-        "מחשב מדד תקינות פיתות לפי חוקי הפיזיקה...",
-        "ממיין ביקורות של אנשים קשוחים...",
-        "מתדיין אסטרונומית עם משרדי כשרות...",
-        "מעדכן קצב טיגון כדורים בבריכת שמן..."
-    )
-
-    LaunchedEffect(state.generatingReviewsWithGemini) {
-        if (state.generatingReviewsWithGemini) {
-            while (true) {
-                delay(800)
-                logsTickerIndex = (logsTickerIndex + 1) % funnyLoadingPhrases.size
-            }
-        }
-    }
-
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -140,7 +120,7 @@ fun DaySummaryScreen(viewModel: GameViewModel, state: GameUiState) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "💬 ביקורות גוגל מפות שנוצרו ברשת:",
+                    text = "💬 ביקורות הלקוחות של היום:",
                     color = Color.White,
                     fontWeight = FontWeight.Black,
                     fontSize = 15.sp,
@@ -148,50 +128,20 @@ fun DaySummaryScreen(viewModel: GameViewModel, state: GameUiState) {
                     textAlign = TextAlign.Right
                 )
 
-                if (state.generatingReviewsWithGemini) {
-                    ThreeDStaticCard(
-                        modifier = Modifier.fillMaxWidth().height(150.dp),
-                        backgroundColor = FalafelRushTheme.GlassCardBg
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            CircularProgressIndicator(color = FalafelRushTheme.NeonCyan)
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = funnyLoadingPhrases[logsTickerIndex],
-                                color = FalafelRushTheme.NeonCyan,
-                                fontSize = 12.sp,
-                                fontFamily = FontFamily.Monospace,
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                text = "מפעיל אינטליגנציה מלאכותית Google Gemini ⚡",
-                                color = Color.White.copy(alpha = 0.5f),
-                                fontSize = 10.sp,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
-                        }
-                    }
-                } else {
-                    // Loaded Reviews list
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        if (state.generatedTodayReviews.isEmpty()) {
-                            Text(
-                                text = "אין ביקורות להצגה היום.",
-                                color = Color.White.copy(alpha = 0.5f),
-                                fontSize = 12.sp
-                            )
-                        } else {
-                            state.generatedTodayReviews.forEach { review ->
-                                ReviewCardItem(review)
-                            }
+                // Reviews list
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (state.generatedTodayReviews.isEmpty()) {
+                        Text(
+                            text = "אין ביקורות להצגה היום.",
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 12.sp
+                        )
+                    } else {
+                        state.generatedTodayReviews.forEach { review ->
+                            ReviewCardItem(review)
                         }
                     }
                 }

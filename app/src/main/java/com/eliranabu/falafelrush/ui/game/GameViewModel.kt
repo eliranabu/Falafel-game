@@ -1,14 +1,13 @@
 package com.eliranabu.falafelrush.ui.game
 
 import android.app.Application
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.eliranabu.falafelrush.data.api.GeminiService
 import com.eliranabu.falafelrush.data.database.AppDatabase
 import com.eliranabu.falafelrush.data.database.CustomerReview
 import com.eliranabu.falafelrush.data.database.GameRepository
 import com.eliranabu.falafelrush.data.database.GameSaveState
+import com.eliranabu.falafelrush.data.reviews.LocalReviewGenerator
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -155,8 +154,6 @@ data class GameUiState(
     val showFloatingToast: String? = null,
     val particles: List<GameParticle> = emptyList(),
     
-    // Loading indicator for Gemini dynamic content
-    val generatingReviewsWithGemini: Boolean = false,
     val generatedTodayReviews: List<CustomerReview> = emptyList(),
     val feedbackMessage: String = "מוכן לעבודה! תעמיס פיתות 🫓"
 )
@@ -625,17 +622,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Process gameplay day conclusion, saving scores and launching Gemini API reviewers!
+    // Process gameplay day conclusion, saving scores and generating local reviews
     private fun endGameplayDay() {
         stopDayJobs()
-        
+
         val todayServed = _uiState.value.servedCountToday
         val todayFailed = _uiState.value.failedCountToday
         val todayLeft = _uiState.value.impatientLeftToday
         val todayCoins = _uiState.value.revenueEarnedToday
         val currentDayNum = _uiState.value.saveState.currentDay
 
-        _uiState.update { it.copy(generatingReviewsWithGemini = true, currentScreen = GameScreen.DAY_SUMMARY) }
+        _uiState.update { it.copy(currentScreen = GameScreen.DAY_SUMMARY) }
 
         viewModelScope.launch {
             // Save newly-earned cash directly inside Room Database!
@@ -645,34 +642,21 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             )
             repository.updateSaveState(updatedSave)
 
-            // Dynamic progression details for Gemini generative context
-            val statsDetails = "ביצועי שחקן: ${todayServed} פיתות מושלמות סופקו, ${todayFailed} שגיאות מטבח, ${todayLeft} לקוחות שעזבו. נאספו מטבעות: ${todayCoins}."
+            // Fully-offline Hebrew review generation based on today's performance
+            val reviewList = LocalReviewGenerator.generateReviews(
+                day = currentDayNum,
+                servedCount = todayServed,
+                errorCount = todayFailed,
+                leftCount = todayLeft,
+                coinsEarned = todayCoins
+            )
 
-            // Trigger real Gemini Google AI reviews generator or fallback
-            try {
-                val reviewList = GeminiService.generateReviews(
-                    day = currentDayNum,
-                    servedCount = todayServed,
-                    errorCount = todayFailed,
-                    leftCount = todayLeft,
-                    statsDetails = statsDetails
-                )
-                
-                // Persistence reviews inside Room
-                reviewList.forEach { review ->
-                    repository.insertReview(review)
-                }
-
-                _uiState.update {
-                    it.copy(
-                        generatedTodayReviews = reviewList,
-                        generatingReviewsWithGemini = false
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e("GameViewModel", "Failed to generate dynamic reviews", e)
-                _uiState.update { it.copy(generatingReviewsWithGemini = false) }
+            // Persist reviews inside Room
+            reviewList.forEach { review ->
+                repository.insertReview(review)
             }
+
+            _uiState.update { it.copy(generatedTodayReviews = reviewList) }
         }
     }
 
