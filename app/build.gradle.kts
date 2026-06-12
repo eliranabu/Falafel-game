@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.compose)
@@ -14,18 +16,32 @@ android {
     minSdk = 24
     targetSdk = 36
     versionCode = 1
-    versionName = "1.0"
+    versionName = "1.0.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
+  // Release signing via gitignored keystore.properties:
+  //   storeFile=upload-keystore.jks
+  //   storePassword=...
+  //   keyAlias=upload
+  //   keyPassword=...
+  // Generate the keystore with:
+  //   keytool -genkeypair -v -keystore upload-keystore.jks -keyalias upload \
+  //     -keyalg RSA -keysize 2048 -validity 10000
+  val keystorePropsFile = rootProject.file("keystore.properties")
+  val hasReleaseKeystore = keystorePropsFile.exists()
+
   signingConfigs {
-    create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
+    if (hasReleaseKeystore) {
+      val props = Properties()
+      keystorePropsFile.inputStream().use { stream -> props.load(stream) }
+      create("release") {
+        storeFile = rootProject.file(props.getProperty("storeFile"))
+        storePassword = props.getProperty("storePassword")
+        keyAlias = props.getProperty("keyAlias")
+        keyPassword = props.getProperty("keyPassword")
+      }
     }
     create("debugConfig") {
       storeFile = file("${rootDir}/debug.keystore")
@@ -38,9 +54,12 @@ android {
   buildTypes {
     release {
       isCrunchPngs = false
-      isMinifyEnabled = false
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("release")
+      if (hasReleaseKeystore) {
+        signingConfig = signingConfigs.getByName("release")
+      }
     }
     debug {
       signingConfig = signingConfigs.getByName("debugConfig")
@@ -54,7 +73,17 @@ android {
     compose = true
     buildConfig = true
   }
-  testOptions { unitTests { isIncludeAndroidResources = true } }
+  testOptions {
+    unitTests {
+      isIncludeAndroidResources = true
+      all { test ->
+        // KNOWN ISSUE: on this Windows machine (Hebrew project path) the Gradle
+        // test worker fails with ClassNotFoundException for every test class.
+        // Tests run fine on CI/Linux. UTF-8 args kept as best practice.
+        test.jvmArgs("-Dfile.encoding=UTF-8", "-Dsun.jnu.encoding=UTF-8")
+      }
+    }
+  }
 }
 
 // Some unused dependencies are commented out below instead of being removed.

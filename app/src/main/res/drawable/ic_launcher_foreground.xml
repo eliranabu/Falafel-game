@@ -1,30 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:pathData="M31,63.928c0,0 6.4,-11 12.1,-13.1c7.2,-2.6 26,-1.4 26,-1.4l38.1,38.1L107,108.928l-32,-1L31,63.928z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:endX="85.84757"
-                android:endY="92.4963"
-                android:startX="42.9492"
-                android:startY="49.59793"
-                android:type="linear">
-                <item
-                    android:color="#44000000"
-                    android:offset="0.0" />
-                <item
-                    android:color="#00000000"
-                    android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
-    </path>
+    <!-- Pita pocket: golden half-disc with a toasted rim (art inside the 66dp safe zone) -->
     <path
-        android:fillColor="#FFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M65.3,45.828l3.8,-6.6c0.2,-0.4 0.1,-0.9 -0.3,-1.1c-0.4,-0.2 -0.9,-0.1 -1.1,0.3l-3.9,6.7c-6.3,-2.8 -13.4,-2.8 -19.7,0l-3.9,-6.7c-0.2,-0.4 -0.7,-0.5 -1.1,-0.3C38.8,38.328 38.7,38.828 38.9,39.228l3.8,6.6C36.2,49.428 31.7,56.028 31,63.928h46C76.3,56.028 71.8,49.428 65.3,45.828zM43.4,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2c-0.3,-0.7 -0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C45.3,56.528 44.5,57.328 43.4,57.328L43.4,57.328zM64.6,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2s-0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C66.5,56.528 65.6,57.328 64.6,57.328L64.6,57.328z"
-        android:strokeWidth="1"
-        android:strokeColor="#00000000" />
+        android:fillColor="#C9A26B"
+        android:pathData="M28,56 A26,26 0 0 0 80,56 L80,58 A26,26 0 0 1 28,58 Z" />
+    <path
+        android:fillColor="#E5C185"
+        android:pathData="M28,56 A26,26 0 0 0 80,56 Z" />
+    <!-- Inner pocket shading -->
+    <path
+        android:fillColor="#D7B070"
+        android:pathData="M33,56 A21,21 0 0 0 75,56 Z" />
+
+    <!-- Salad garnish peeking out -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M36,54m-4,0a4,4 0 1,1 8,0a4,4 0 1,1 -8,0" />
+    <path
+        android:fillColor="#66BB6A"
+        android:pathData="M72,54m-4,0a4,4 0 1,1 8,0a4,4 0 1,1 -8,0" />
+
+    <!-- Three falafel balls stacked above the pocket -->
+    <path
+        android:fillColor="#6D4C41"
+        android:pathData="M43,49m-9,0a9,9 0 1,1 18,0a9,9 0 1,1 -18,0" />
+    <path
+        android:fillColor="#7A5548"
+        android:pathData="M65,49m-9,0a9,9 0 1,1 18,0a9,9 0 1,1 -18,0" />
+    <path
+        android:fillColor="#8D6E63"
+        android:pathData="M54,42m-10,0a10,10 0 1,1 20,0a10,10 0 1,1 -20,0" />
+
+    <!-- Crispy highlights on the falafel -->
+    <path
+        android:fillColor="#A1887F"
+        android:pathData="M51,38m-3,0a3,3 0 1,1 6,0a3,3 0 1,1 -6,0" />
+    <path
+        android:fillColor="#9C7A6D"
+        android:pathData="M40,46m-2.5,0a2.5,2.5 0 1,1 5,0a2.5,2.5 0 1,1 -5,0" />
+    <path
+        android:fillColor="#9C7A6D"
+        android:pathData="M68,46m-2.5,0a2.5,2.5 0 1,1 5,0a2.5,2.5 0 1,1 -5,0" />
+
+    <!-- Tahini drizzle -->
+    <path
+        android:fillColor="#FFF9C4"
+        android:pathData="M48,50 q3,4 6,0 q3,-4 6,0 q-3,5 -6,5 q-3,0 -6,-5 Z" />
 </vector>

@@ -1,21 +1,49 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# 🧆 Falafel Rush — Street Food Empire
 
-# Run and deploy your AI Studio app
+משחק ארקייד-טייקון מהיר לאנדרואיד: נהלו דוכן פלאפל, הרכיבו פיתות במהירות, שמרו על סבלנות הלקוחות, שדרגו את העסק ובנו אימפריית פלאפל עולמית.
 
-This contains everything you need to run your app locally.
+**100% אופליין** — בלי הרשאות, בלי רשת, בלי איסוף מידע.
 
-View your app in AI Studio: https://ai.studio/apps/b4694e46-c9cf-4260-b1ba-e2c75d17110e
+## Features
+- 6 ארכיטיפים של לקוחות מצוירים ב-Canvas עם הבעות פנים דינמיות
+- גרירה/הקשה של מרכיבים, אנימציות serve/exit, אינדיקטור "+🪙" מרחף
+- שעת עומס עם vignette זהוב פועם + אזעקה
+- מנוע אודיו סינתטי (AudioTrack) — אפס קבצי מדיה
+- קושי מתקדם: סבלנות יורדת 5% ליום, הזמנות כפולות, עומס גובר
+- תפריט השהיה + הדרכת פתיחה + ביקורות עבריות מקומיות
+- שמירה מלאה ב-Room (מטבעות, ימים, שדרוגים, ביקורות)
 
-## Run Locally
+## Build
 
-**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
+**Prerequisites:** JDK 17+ (Android Studio JBR works), Android SDK 36
 
+```powershell
+.\gradlew.bat assembleDebug      # debug APK
+.\gradlew.bat bundleRelease      # Play Store AAB
+```
 
-1. Open Android Studio
-2. Select **Open** and choose the directory containing this project
-3. Allow Android Studio to fix any incompatibilities as it imports the project.
-4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
-5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
-6. Run the app on an emulator or physical device
+`local.properties` needs `sdk.dir` pointing at your Android SDK.
+
+## Release signing
+
+Create an upload keystore (one time):
+
+```powershell
+keytool -genkeypair -v -keystore upload-keystore.jks -keyalias upload -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Then create `keystore.properties` in the project root (gitignored):
+
+```properties
+storeFile=upload-keystore.jks
+storePassword=YOUR_STORE_PASSWORD
+keyAlias=upload
+keyPassword=YOUR_KEY_PASSWORD
+```
+
+`bundleRelease` will pick it up automatically. Without it, release artifacts build unsigned.
+
+## Play Store notes
+- App is fully offline, zero permissions → Data Safety form: "No data collected or shared"
+- A privacy policy URL is still required on the listing — a one-paragraph static page stating no data is collected is enough
+- Known issue: unit tests fail to execute on Windows hosts with non-ASCII project paths (Gradle test-worker limitation); they run fine on CI/Linux
