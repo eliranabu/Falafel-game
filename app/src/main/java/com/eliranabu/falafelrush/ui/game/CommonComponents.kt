@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.eliranabu.falafelrush.audio.SoundId
 import com.eliranabu.falafelrush.data.database.CustomerReview
 
 // Custom 3D Bouncy Pressed Extruded Button Component
@@ -41,6 +42,7 @@ fun Bouncy3DButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val soundManager = LocalSoundManager.current
 
     // Scale and click compress spring animations
     val buttonOffsetY by animateDpAsState(
@@ -56,7 +58,10 @@ fun Bouncy3DButton(
                 interactionSource = interactionSource,
                 indication = null,
                 enabled = enabled,
-                onClick = onClick
+                onClick = {
+                    soundManager?.play(SoundId.BUTTON_TICK)
+                    onClick()
+                }
             )
     ) {
         // Bottom 3D Layer (the block extrusion shadow depth)

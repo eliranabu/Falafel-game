@@ -12,20 +12,27 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.sp
+import com.eliranabu.falafelrush.audio.SoundManager
+
+// Composition-wide access to the synthesized audio engine (e.g. button ticks)
+val LocalSoundManager = staticCompositionLocalOf<SoundManager?> { null }
 
 // Master Orchestrator Component routing scenes properly
 @Composable
 fun FalafelRushApp(viewModel: GameViewModel) {
     val state by viewModel.uiState.collectAsState()
 
+    CompositionLocalProvider(LocalSoundManager provides viewModel.soundManager) {
     // Gradient fluid background
     Box(
         modifier = Modifier
@@ -74,5 +81,6 @@ fun FalafelRushApp(viewModel: GameViewModel) {
                 GameScreen.REVIEWS -> HistoricReviewsScreen(viewModel, state)
             }
         }
+    }
     }
 }

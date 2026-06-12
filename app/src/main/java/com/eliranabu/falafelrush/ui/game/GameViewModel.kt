@@ -3,6 +3,8 @@ package com.eliranabu.falafelrush.ui.game
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.eliranabu.falafelrush.audio.SoundId
+import com.eliranabu.falafelrush.audio.SoundManager
 import com.eliranabu.falafelrush.data.database.AppDatabase
 import com.eliranabu.falafelrush.data.database.CustomerReview
 import com.eliranabu.falafelrush.data.database.GameRepository
@@ -160,7 +162,10 @@ data class GameUiState(
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: GameRepository
-    
+
+    // Synthesized arcade audio engine (no media assets)
+    val soundManager: SoundManager = SoundManager(viewModelScope)
+
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
@@ -180,6 +185,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             repository.saveState.collect { dbState ->
                 if (dbState != null) {
+                    soundManager.enabled = dbState.soundEffectsEnabled
                     _uiState.update { it.copy(saveState = dbState) }
                 } else {
                     // Create primary state if missing
@@ -277,9 +283,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
             if (updatedState != null) {
                 repository.updateSaveState(updatedState)
+                soundManager.play(SoundId.COIN_CHIME)
                 triggerParticleBurst(300f, 600f, amount = 25, isCoin = false, emoji = "⭐")
                 showFeedback("שדרוג בוצע בהצלחה! 🎉")
             } else {
+                soundManager.play(SoundId.ANGRY_BUZZ)
                 triggerScreenShake(4f)
                 showFeedback("אין מספיק מטבעות פלאפל לשדרוג זה! 🪙")
             }
@@ -358,6 +366,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 
                 if (isNowRushHour && !wasRushHour) {
+                    soundManager.play(SoundId.RUSH_ALARM)
                     triggerScreenShake(8f)
                     triggerParticleBurst(400f, 300f, amount = 25, isCoin = false, emoji = "🚨")
                     showFeedback("🚨 שעת עומס מטורפת! לקוחות זורמים במהירות כפולה ומשאירים טיפים משוגעים! 🚨")
@@ -396,6 +405,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 
                 if (customerLeft) {
+                    soundManager.play(SoundId.ANGRY_BUZZ)
                     showFeedback("אוי לא! לקוח התייאש מההמתנה ועזב! 😡")
                 }
 
@@ -499,6 +509,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         _uiState.update { it.copy(preparedIngredients = updatedList) }
+        soundManager.play(SoundId.PLOP)
         showFeedback("נוסף למנה: ${ingredient.displayName} ${ingredient.emoji}")
         
         // Particle burst at bottom cooking locations
@@ -541,6 +552,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
         
+        soundManager.play(SoundId.ANGRY_BUZZ)
         triggerScreenShake(8f)
         triggerParticleBurst(450f, 750f, amount = 15, isCoin = false, emoji = "💥")
     }
@@ -592,6 +604,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             // Explode real physics-based particles matching customer type!
+            soundManager.play(SoundId.SERVE_ARPEGGIO)
+            soundManager.play(SoundId.COIN_CHIME)
             triggerScreenShake(3f)
             val particleEmoji = when (targetCustomer.type) {
                 CustomerType.CELEBRITY -> "👑"
@@ -608,6 +622,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
         } else {
             // Bad mix! Customer gets disappointed, but continues waiting!
+            soundManager.play(SoundId.ANGRY_BUZZ)
             triggerScreenShake(9f)
             triggerParticleBurst(300f, 400f, amount = 10, isCoin = false, emoji = "🤮")
             
@@ -632,6 +647,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val todayCoins = _uiState.value.revenueEarnedToday
         val currentDayNum = _uiState.value.saveState.currentDay
 
+        soundManager.play(SoundId.DAY_END_JINGLE)
         _uiState.update { it.copy(currentScreen = GameScreen.DAY_SUMMARY) }
 
         viewModelScope.launch {
@@ -734,6 +750,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     override fun onCleared() {
         stopDayJobs()
         particlePhysicsJob?.cancel()
+        soundManager.release()
         super.onCleared()
     }
 }
