@@ -13,7 +13,8 @@ data class GameSaveState(
     val patienceUpgradeLevel: Int = 1,   // Customers wait longer
     val marketingUpgradeLevel: Int = 1,  // Generates higher tips
     val autoSauceUpgradeLevel: Int = 0,   // Auto-adds Tahini if true/level > 0
-    val soundEffectsEnabled: Boolean = true
+    val soundEffectsEnabled: Boolean = true,
+    val hasSeenTutorial: Boolean = false
 )
 
 @Entity(tableName = "customer_reviews")

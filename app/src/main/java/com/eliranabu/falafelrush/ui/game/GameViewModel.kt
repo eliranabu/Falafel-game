@@ -111,7 +111,8 @@ data class GameCustomer(
     val currentPatience: Float, // ranges from 1.0 down to 0.0
     val isVip: Boolean = false,
     val tipScale: Float = 1.0f,
-    val type: CustomerType = CustomerType.STUDENT
+    val type: CustomerType = CustomerType.STUDENT,
+    val valueBonus: Int = 0 // extra coins for special (e.g. doubled) orders
 )
 
 // Reason a customer leaves the queue — drives the exit choreography in the UI
@@ -154,6 +155,8 @@ data class GameUiState(
     val preparedIngredients: List<Ingredient> = emptyList(), // what user added
     val comboStreak: Int = 0,
     val isRushHour: Boolean = false, // Rush hour triggers intense events
+    val isPaused: Boolean = false,
+    val showTutorial: Boolean = false,
     
     // Day Ledger Stats
     val servedCountToday: Int = 0,
@@ -310,6 +313,26 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(feedbackMessage = msg) }
     }
 
+    // Pause / resume the live day (timer, patience decay and spawning all freeze)
+    fun togglePause() {
+        _uiState.update { it.copy(isPaused = !it.isPaused) }
+    }
+
+    // Auto-pause when the app goes to background mid-day
+    fun pauseGame() {
+        if (_uiState.value.currentScreen == GameScreen.GAMEPLAY && !_uiState.value.isPaused) {
+            _uiState.update { it.copy(isPaused = true) }
+        }
+    }
+
+    // First-launch tutorial finished: persist the flag and release the game
+    fun completeTutorial() {
+        viewModelScope.launch {
+            repository.updateSaveState(_uiState.value.saveState.copy(hasSeenTutorial = true))
+            _uiState.update { it.copy(showTutorial = false, isPaused = false) }
+        }
+    }
+
     // Toggle Sound preference
     fun toggleSound() {
         viewModelScope.launch {
@@ -323,11 +346,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         stopDayJobs()
         
         val nextDayEvent = getEventForDay(_uiState.value.saveState.currentDay)
-        
+        val needsTutorial = !_uiState.value.saveState.hasSeenTutorial
+
         _uiState.update {
             it.copy(
                 currentScreen = GameScreen.GAMEPLAY,
                 activeEvent = nextDayEvent,
+                isPaused = needsTutorial, // freeze the day until the tutorial is dismissed
+                showTutorial = needsTutorial,
                 dayTimeRemainingSec = 120,
                 activeCustomers = emptyList(),
                 departingCustomers = emptyList(),
@@ -362,6 +388,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         gameLoopJob = viewModelScope.launch {
             while (_uiState.value.dayTimeRemainingSec > 0) {
                 delay(1000)
+                if (_uiState.value.isPaused) continue // frozen clock while paused
                 val newTime = _uiState.value.dayTimeRemainingSec - 1
                 
                 // Periodic Rush Hour (lasts 15 seconds)
@@ -395,7 +422,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         customerTimerJob = viewModelScope.launch {
             while (true) {
                 delay(100) // update patience/timers frequently for fluid movement at 60fps
-                
+                if (_uiState.value.isPaused) continue // no decay or spawns while paused
+
                 // Decay patience of existing customers
                 val leavers = mutableListOf<GameCustomer>()
                 val updatedCustomers = _uiState.value.activeCustomers.mapNotNull { customer ->
@@ -436,9 +464,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 val isRush = _uiState.value.isRushHour
                 val maxCustomersLimit = if (marketingLevel >= 3) 5 else 4
                 
-                // Spawning check is significantly accelerated during Rush Hour & active Daily Events
+                // Spawning check is significantly accelerated during Rush Hour & active Daily Events,
+                // plus gentle +3%/day pressure (capped at x1.6) for progressive difficulty
                 val baseSpawnChance = if (isRush) 0.08f else 0.025f // 8% vs 2.5% chance every 100ms
-                val spawnChance = baseSpawnChance * _uiState.value.activeEvent.customerSpawnMod
+                val daySpawnPressure = (1f + 0.03f * (_uiState.value.saveState.currentDay - 1)).coerceAtMost(1.6f)
+                val spawnChance = baseSpawnChance * _uiState.value.activeEvent.customerSpawnMod * daySpawnPressure
                 if (updatedCustomers.size < maxCustomersLimit && Random.nextFloat() < spawnChance) {
                     spawnCustomer()
                 }
@@ -479,22 +509,38 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val tipScale = if (customerType.isVip) 3.0f else (if (isRush) 1.5f else 1.0f)
         val nameWithLabel = if (isVip) "👑 $firstName" else firstName
 
-        // Max patience in seconds
+        // Max patience in seconds, shrinking 5% per day for progressive difficulty (floored at 55%)
+        val day = _uiState.value.saveState.currentDay
+        val dayDifficultyMod = (1f - 0.05f * (day - 1)).coerceAtLeast(0.55f)
         val patientLevelMultiplier = 1.0f + (_uiState.value.saveState.patienceUpgradeLevel * 0.20f)
-        val basePatience = (10 + Random.nextInt(8)) * patientLevelMultiplier
+        val basePatience = (10 + Random.nextInt(8)) * patientLevelMultiplier * dayDifficultyMod
+
+        // Progressive challenge: growing chance of a doubled-ingredient order (worth +40%)
+        val doubleOrderChance = (0.10f + 0.01f * (day - 1)).coerceAtMost(0.25f)
+        var requiredOrder = preset.ingredients
+        var valueBonus = 0
+        var phrase = customerType.basePhrase
+        val doublable = preset.ingredients.filter { it != Ingredient.PITA }
+        if (day > 1 && doublable.isNotEmpty() && Random.nextFloat() < doubleOrderChance) {
+            val doubled = doublable.random()
+            requiredOrder = preset.ingredients + doubled
+            valueBonus = (preset.baseValue * 0.4f).toInt()
+            phrase = "תכפיל לי את ה${doubled.displayName}! ${customerType.basePhrase}"
+        }
 
         val newCustomer = GameCustomer(
             name = nameWithLabel,
             avatar = customerType.avatar,
             description = customerType.description,
-            phrase = customerType.basePhrase,
-            requiredOrder = preset.ingredients,
+            phrase = phrase,
+            requiredOrder = requiredOrder,
             orderPreset = preset,
             maxPatienceSec = basePatience,
             currentPatience = 1.0f,
             isVip = isVip,
             tipScale = tipScale,
-            type = customerType
+            type = customerType,
+            valueBonus = valueBonus
         )
 
         _uiState.update {
@@ -590,10 +636,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val targetCustomer = customers.first() // oldest customer in the stack
         
-        // Check if recipe is accurate. To be accurate, ALL required ingredients must be present,
-        // and no extra useless ingredients (though order of tapping can be dynamic for custom gameplay!)
-        val required = targetCustomer.requiredOrder.toSet()
-        val generated = prepared.toSet()
+        // Multiset comparison: every required ingredient with its exact COUNT must match
+        // (doubled orders need the ingredient twice), tap order stays free-form.
+        val required = targetCustomer.requiredOrder.groupingBy { it }.eachCount()
+        val generated = prepared.groupingBy { it }.eachCount()
 
         if (required == generated) {
             // Recipe matches! Compute earnings!
@@ -601,7 +647,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val recipePremium = _uiState.value.saveState.priceUpgradeLevel * 4 // +4 coins per level
             
             // Core calculations
-            val basePay = targetCustomer.orderPreset.baseValue + recipePremium
+            val basePay = targetCustomer.orderPreset.baseValue + targetCustomer.valueBonus + recipePremium
             val speedBonus = if (targetCustomer.currentPatience > 0.6f) 15 else 0
             val premiumVipTip = if (targetCustomer.isVip) 35 else 0
             val isRush = _uiState.value.isRushHour

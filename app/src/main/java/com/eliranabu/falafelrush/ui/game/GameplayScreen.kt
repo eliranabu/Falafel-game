@@ -27,6 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import kotlinx.coroutines.launch
 import kotlin.math.max
 import kotlin.math.sin
@@ -46,6 +48,11 @@ fun GameplayScreen(viewModel: GameViewModel, state: GameUiState) {
         }
     }
 
+    // Auto-pause the live day when the app goes to background
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) {
+        viewModel.pauseGame()
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
@@ -58,7 +65,11 @@ fun GameplayScreen(viewModel: GameViewModel, state: GameUiState) {
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         // TOP HUD BAR
-        HUDBar(state, onExitClicked = { viewModel.setScreen(GameScreen.START_SCREEN) })
+        HUDBar(
+            state = state,
+            onExitClicked = { viewModel.setScreen(GameScreen.START_SCREEN) },
+            onPauseClicked = { viewModel.togglePause() }
+        )
 
         // Active Daily Event Banner during gameplay
         if (state.activeEvent != DailyEvent.NORMAL) {
@@ -205,6 +216,18 @@ fun GameplayScreen(viewModel: GameViewModel, state: GameUiState) {
         )
     }
 
+    // PAUSE & TUTORIAL OVERLAYS (rendered above gameplay, below nothing)
+    if (state.showTutorial) {
+        TutorialOverlay(onFinished = { viewModel.completeTutorial() })
+    } else if (state.isPaused) {
+        PauseMenuOverlay(
+            soundEnabled = state.saveState.soundEffectsEnabled,
+            onResume = { viewModel.togglePause() },
+            onToggleSound = { viewModel.toggleSound() },
+            onExitDay = { viewModel.setScreen(GameScreen.START_SCREEN) }
+        )
+    }
+
     // GOLDEN-HOUR VIGNETTE: warm pulsing screen-border glow during rush hour.
     // Draw-only overlay — never intercepts touch input.
     if (state.isRushHour) {
@@ -300,7 +323,7 @@ fun DepartingCustomerCard(dep: DepartingCustomer) {
 
 // Sub-Component: Top Header HUD stats Bar (Designed as a Premium Blackboard Menu / Food Slate)
 @Composable
-fun HUDBar(state: GameUiState, onExitClicked: () -> Unit) {
+fun HUDBar(state: GameUiState, onExitClicked: () -> Unit, onPauseClicked: () -> Unit = {}) {
     // Score calculation
     val chefScore = (state.revenueEarnedToday * 10) + (state.servedCountToday * 55) + (state.comboStreak * 20) - (state.failedCountToday * 12)
     val positiveScore = chefScore.coerceAtLeast(0)
@@ -329,18 +352,31 @@ fun HUDBar(state: GameUiState, onExitClicked: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             // EXIT BUTTON (Styled like some chalkboard chalk text mark)
-            IconButton(
-                onClick = onExitClicked,
-                modifier = Modifier
-                    .background(Color.White.copy(alpha = 0.08f), CircleShape)
-                    .size(38.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "חזרה",
-                    tint = Color.White.copy(alpha = 0.85f),
-                    modifier = Modifier.size(18.dp)
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                IconButton(
+                    onClick = onExitClicked,
+                    modifier = Modifier
+                        .background(Color.White.copy(alpha = 0.08f), CircleShape)
+                        .size(38.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "חזרה",
+                        tint = Color.White.copy(alpha = 0.85f),
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                IconButton(
+                    onClick = onPauseClicked,
+                    modifier = Modifier
+                        .background(Color.White.copy(alpha = 0.08f), CircleShape)
+                        .size(38.dp)
+                ) {
+                    Text(
+                        text = if (state.isPaused) "▶️" else "⏸️",
+                        fontSize = 14.sp
+                    )
+                }
             }
 
             // SCORE / STARS (Chef Level Score)
@@ -442,24 +478,43 @@ fun HUDBar(state: GameUiState, onExitClicked: () -> Unit) {
                 )
             }
 
-            // COMBO STREAK
-            if (state.comboStreak > 1) {
-                Box(
-                    modifier = Modifier
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(FalafelRushTheme.HotOrange, FalafelRushTheme.DeepGold)
-                            ),
-                            RoundedCornerShape(8.dp)
+            // COMBO STREAK — reserved slot so the HUD never jumps, scale-pop on change,
+            // milestone colors at 3 / 5 / 10
+            Box(
+                modifier = Modifier.width(44.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (state.comboStreak > 1) {
+                    val comboPop = remember { Animatable(1f) }
+                    LaunchedEffect(state.comboStreak) {
+                        comboPop.snapTo(1.35f)
+                        comboPop.animateTo(1f, animationSpec = spring(dampingRatio = 0.45f, stiffness = 500f))
+                    }
+                    val comboColors = when {
+                        state.comboStreak >= 10 -> listOf(Color(0xFFD500F9), FalafelRushTheme.NeonCyan) // legendary
+                        state.comboStreak >= 5 -> listOf(FalafelRushTheme.CrimsonRed, FalafelRushTheme.HotOrange) // hot
+                        state.comboStreak >= 3 -> listOf(FalafelRushTheme.HotOrange, FalafelRushTheme.DeepGold)
+                        else -> listOf(FalafelRushTheme.DeepGold, FalafelRushTheme.BrightGold)
+                    }
+                    Box(
+                        modifier = Modifier
+                            .graphicsLayer {
+                                scaleX = comboPop.value
+                                scaleY = comboPop.value
+                            }
+                            .background(
+                                Brush.horizontalGradient(comboColors),
+                                RoundedCornerShape(8.dp)
+                            )
+                            .padding(horizontal = 6.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = "X${state.comboStreak} 🔥",
+                            color = Color.White,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 9.sp
                         )
-                        .padding(horizontal = 6.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "X${state.comboStreak} 🔥",
-                        color = Color.White,
-                        fontWeight = FontWeight.Black,
-                        fontSize = 9.sp
-                    )
+                    }
                 }
             }
         }
