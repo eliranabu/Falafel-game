@@ -208,7 +208,7 @@ fun PitaAssemblyWorkspace(
                 .padding(6.dp)
         ) {
             Text(
-                text = "⚡ גרור מרכיב למעלה לשולחן כדי להוסיף, או לחץ מהיר:",
+                text = "⚡ הוסף את מה שהלקוח ביקש (הפיתה כבר מוכנה):",
                 color = FalafelRushTheme.BrightGold,
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Bold,
@@ -218,17 +218,15 @@ fun PitaAssemblyWorkspace(
                     .padding(bottom = 4.dp)
             )
 
-            // Grid of trays (3 columns, 2 rows)
-            val rows = Ingredient.values().toList().chunked(3)
+            // Grid of trays — fillings only; pita is an automatic base, always tappable
+            val rows = Ingredient.values().filter { it != Ingredient.PITA }.chunked(3)
             rows.forEach { rowIngredients ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     rowIngredients.forEach { ing ->
-                        // Determine if addition is allowed (pita must be active unless adding pita itself)
-                        val isPitaActive = preparedIngredients.contains(Ingredient.PITA)
-                        val allowed = ing == Ingredient.PITA || isPitaActive
+                        val allowed = true
 
                         Box(
                             modifier = Modifier

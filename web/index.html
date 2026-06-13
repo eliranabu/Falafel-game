@@ -53,7 +53,7 @@
     <div style="font-size:10px;color:#cbb;font-weight:700;margin:11px 2px 5px">הלקוח המודגש מחכה — הוסף את מה שביקש:</div>
     <div id="queue" style="display:flex;gap:9px;overflow-x:auto;padding-bottom:6px;min-height:160px;align-items:flex-start"></div>
     <div class="glass" style="border-radius:18px;padding:10px;margin-top:4px;border-color:rgba(0,229,255,.25)">
-      <div id="pita" style="min-height:42px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;align-items:center;background:rgba(0,0,0,.28);border-radius:13px;padding:8px;transition:transform .12s,box-shadow .2s"></div>
+      <div id="pita" style="min-height:62px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;background:rgba(0,0,0,.28);border-radius:13px;padding:9px;transition:transform .12s,box-shadow .2s"></div>
       <div id="bins" style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px"></div>
     </div>
     <div style="display:flex;gap:9px;margin-top:11px">
@@ -163,9 +163,15 @@ function render(){
   card.onclick=function(){if(!c.leaving){S.sel=c.id;freshPita();render()}};
   q.appendChild(card);
  });
- var p=$('pita');
- if(!selCust()){p.innerHTML='<span style="font-size:11px;color:#888">מחכים ללקוח הבא... 🧎</span>'}
- else{p.innerHTML=S.pita.map(function(k){var base=k==='PITA';return '<span style="background:'+ING[k].c+';color:#2a2a2a;border-radius:9px;padding:5px 9px;font-size:12px;font-weight:800;box-shadow:0 2px 5px #0004;'+(base?'':'animation:pop .25s')+'">'+ING[k].e+' '+ING[k].n+(base?' (בסיס)':'')+'</span>'}).join('')}
+ var p=$('pita'),sc=selCust();
+ if(!sc){p.innerHTML='<span style="font-size:11px;color:#888">מחכים ללקוח הבא... 🧎</span>'}
+ else{
+  var nd={},gt={};sc.ord.forEach(function(k){nd[k]=(nd[k]||0)+1});S.pita.forEach(function(k){gt[k]=(gt[k]||0)+1});
+  var ready=Object.keys(nd).length===Object.keys(gt).length&&Object.keys(nd).every(function(k){return nd[k]===gt[k]});
+  p.innerHTML='<div style="width:100%;text-align:center;font-size:10px;font-weight:800;color:'+(ready?'#28E08A':'#FFD27A')+';margin-bottom:3px">'+(ready?'✓ מוכן! לחץ «הגש מנה»':'🍽️ המנה שמתכוננת:')+'</div>'+
+   S.pita.map(function(k){return '<span style="background:'+ING[k].c+';color:#2a2a2a;border-radius:10px;padding:6px 11px;font-size:14px;font-weight:800;box-shadow:0 2px 6px #0005;'+(k==='PITA'?'':'animation:pop .25s')+'">'+ING[k].e+' '+ING[k].n+'</span>'}).join('');
+  $('serve').style.boxShadow=ready?'0 5px 0 #0a6e40,0 0 22px #28E08Aaa':'0 5px 0 #0a6e40';
+ }
  updateBins();
  $('coins').textContent=S.coins;$('score').textContent=S.score;$('time').textContent=Math.ceil(S.time);
  $('goalt').textContent=S.goal;$('walk').textContent=S.walkToday;

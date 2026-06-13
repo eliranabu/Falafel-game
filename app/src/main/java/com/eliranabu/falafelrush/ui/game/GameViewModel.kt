@@ -383,7 +383,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 dayTimeRemainingSec = 120,
                 activeCustomers = emptyList(),
                 departingCustomers = emptyList(),
-                preparedIngredients = emptyList(),
+                preparedIngredients = listOf(Ingredient.PITA), // pita is an automatic base
                 comboStreak = 0,
                 isRushHour = false,
                 servedCountToday = 0,
@@ -639,18 +639,19 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
-    // Empty the pita pocket (Waste mechanics)
+    // Clear the fillings (keep the pita base). Waste mechanics.
     fun tapTrashPita() {
         val prepared = _uiState.value.preparedIngredients
-        if (prepared.isEmpty()) return
-        
+        // Only the bare pita base present -> nothing to clear
+        if (prepared.size <= 1) return
+
         val activeEvent = _uiState.value.activeEvent
         val penalty = activeEvent.trashPenalty
 
         _uiState.update {
             val netPremium = (it.revenueEarnedToday - penalty).coerceAtLeast(0)
             it.copy(
-                preparedIngredients = emptyList(),
+                preparedIngredients = listOf(Ingredient.PITA),
                 failedCountToday = it.failedCountToday + 1,
                 comboStreak = 0,
                 revenueEarnedToday = netPremium,
@@ -713,7 +714,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     activeCustomers = customers.drop(1), // remove served
                     departingCustomers = it.departingCustomers +
                             DepartingCustomer(targetCustomer, DepartReason.SERVED, totalEarned),
-                    preparedIngredients = emptyList(), // clear workspace
+                    preparedIngredients = listOf(Ingredient.PITA), // fresh pita base for next order
                     servedCountToday = it.servedCountToday + 1,
                     revenueEarnedToday = it.revenueEarnedToday + totalEarned,
                     comboStreak = newStreak,
@@ -748,7 +749,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             
             _uiState.update {
                 it.copy(
-                    preparedIngredients = emptyList(), // clear and lose ingredients
+                    preparedIngredients = listOf(Ingredient.PITA), // reset to fresh pita base
                     failedCountToday = it.failedCountToday + 1,
                     comboStreak = 0,
                     feedbackMessage = "מתכון לא נכון! ${targetCustomer.name} מעקם את האף: \"זה לא מה שהזמנתי!\" ❌"
