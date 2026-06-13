@@ -12,17 +12,13 @@
 <style>
   *{box-sizing:border-box;margin:0;padding:0;font-family:'Heebo',sans-serif;-webkit-tap-highlight-color:transparent}
   html,body{height:100%}
-  body{background:radial-gradient(120% 70% at 50% -10%,#241640 0%,#140D2A 50%,#080513 100%);
-    display:flex;align-items:center;justify-content:center;min-height:100dvh;padding:10px;overflow:hidden;color:#fff}
-  #frp{position:relative;width:min(420px,96vw);height:min(820px,94dvh);border-radius:26px;overflow:hidden;color:#fff;user-select:none;
-    background:radial-gradient(120% 80% at 50% 0%,#2A1B47 0%,#160F2E 45%,#0C0820 100%);
-    box-shadow:0 20px 60px -15px #000,inset 0 1px 0 #ffffff18;display:flex;flex-direction:column}
+  body{background:radial-gradient(120% 70% at 50% -10%,#241640 0%,#140D2A 50%,#080513 100%);display:flex;align-items:center;justify-content:center;min-height:100dvh;padding:10px;overflow:hidden;color:#fff}
+  #frp{position:relative;width:min(420px,96vw);height:min(820px,94dvh);border-radius:26px;overflow:hidden;color:#fff;user-select:none;background:radial-gradient(120% 80% at 50% 0%,#2A1B47 0%,#160F2E 45%,#0C0820 100%);box-shadow:0 20px 60px -15px #000,inset 0 1px 0 #ffffff18;display:flex;flex-direction:column}
   .bok{position:absolute;border-radius:50%;filter:blur(14px);opacity:.5;animation:drift 9s ease-in-out infinite}
   @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
   .glass{background:rgba(255,255,255,.06);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1)}
   button{font-family:'Heebo';cursor:pointer;border:none;transition:transform .08s,filter .15s}
-  button:active{transform:scale(.95)}
-  .bin:active{transform:scale(.88)}
+  button:active{transform:scale(.92)}
   @keyframes shk{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}60%{transform:translateX(4px)}}
   @keyframes flash{0%,100%{opacity:1}50%{opacity:.35}}
   @keyframes pop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
@@ -36,7 +32,6 @@
 <div id="frp">
   <div class="bok" style="width:130px;height:130px;background:#FFB300;top:-30px;right:-20px"></div>
   <div class="bok" style="width:100px;height:100px;background:#FF5722;top:50px;left:-30px;animation-delay:2s"></div>
-  <div class="bok" style="width:80px;height:80px;background:#00E5FF;bottom:140px;right:-15px;animation-delay:4s;opacity:.3"></div>
   <div id="ftint" style="position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle,transparent 40%,#FF5722 130%);opacity:0;transition:opacity .4s;z-index:3"></div>
   <div id="edge" style="position:absolute;inset:0;pointer-events:none;border-radius:26px;box-shadow:inset 0 0 0 0 #FFB300;transition:box-shadow .3s;z-index:5"></div>
 
@@ -46,35 +41,26 @@
       <div style="text-align:center;background:rgba(0,0,0,.25);border-radius:13px;padding:4px 12px"><div style="font-size:9px;color:#bbb">⏱️</div><div id="time" style="font-size:17px;font-weight:900">60</div></div>
       <div style="flex:1;text-align:center"><div style="font-size:10px;color:#6BF0A8;font-weight:700">🪙 קופה</div><div id="coins" style="font-size:18px;font-weight:900;color:#6BF0A8">0</div></div>
     </div>
-
     <div style="margin-top:9px">
       <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px;font-weight:700"><span style="color:#cbb">יעד: <b style="color:#FFD27A" id="goalt">120</b>🪙 · עזבו: <b id="walk" style="color:#FF8A65">0</b></span><span id="stars" style="letter-spacing:3px;font-size:14px">☆☆☆</span></div>
       <div style="height:10px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden"><div id="goalbar" style="height:100%;width:0;background:linear-gradient(90deg,#1DB16A,#6BF0A8,#FFD27A);border-radius:5px;transition:width .3s;box-shadow:0 0 8px #6BF0A880"></div></div>
     </div>
-
     <button id="odbtn" style="margin-top:9px;width:100%;background:rgba(255,87,34,.12);border:1px solid rgba(255,138,101,.4);border-radius:13px;padding:8px;color:#fff;position:relative;overflow:hidden">
       <div id="odfill" style="position:absolute;inset:0;width:0;background:linear-gradient(90deg,#FF8A65,#FF5722);opacity:.4;transition:width .2s"></div>
       <span id="odlabel" style="position:relative;font-size:11px;font-weight:800;color:#FF8A65">🔥 בר אש — 0%</span>
     </button>
-
     <div id="rush" style="display:none;text-align:center;font-size:11px;font-weight:900;color:#FFD27A;background:rgba(255,87,34,.18);border:1px solid #FF5722;padding:5px;border-radius:11px;margin-top:9px">🔥 שעת עומס! טיפים ×1.5 🔥</div>
-
-    <div style="font-size:10px;color:#cbb;font-weight:700;margin:11px 2px 5px">בחר לקוח · התחל מפיתה והרכב:</div>
+    <div style="font-size:10px;color:#cbb;font-weight:700;margin:11px 2px 5px">הלקוח המודגש מחכה — הוסף את מה שביקש:</div>
     <div id="queue" style="display:flex;gap:9px;overflow-x:auto;padding-bottom:6px;min-height:160px;align-items:flex-start"></div>
-
     <div class="glass" style="border-radius:18px;padding:10px;margin-top:4px;border-color:rgba(0,229,255,.25)">
-      <div id="pita" style="min-height:42px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;align-items:center;background:rgba(0,0,0,.28);border-radius:13px;padding:8px;transition:transform .12s,box-shadow .2s">
-        <span style="font-size:11px;color:#888">בחר לקוח 👆 והרכב פיתה</span>
-      </div>
+      <div id="pita" style="min-height:42px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;align-items:center;background:rgba(0,0,0,.28);border-radius:13px;padding:8px;transition:transform .12s,box-shadow .2s"></div>
       <div id="bins" style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:9px"></div>
     </div>
-
     <div style="display:flex;gap:9px;margin-top:11px">
-      <button id="trash" style="flex:.34;background:linear-gradient(180deg,#FF4D6A,#D81B45);color:#fff;font-size:16px;font-weight:800;padding:14px;border-radius:15px;box-shadow:0 5px 0 #9c0f2e">🗑️</button>
+      <button id="trash" style="flex:.34;background:linear-gradient(180deg,#FF4D6A,#D81B45);color:#fff;font-size:15px;font-weight:800;padding:14px;border-radius:15px;box-shadow:0 5px 0 #9c0f2e">🗑️ נקה</button>
       <button id="serve" style="flex:.66;background:linear-gradient(180deg,#28E08A,#10A862);color:#053d24;font-size:16px;font-weight:900;padding:14px;border-radius:15px;box-shadow:0 5px 0 #0a6e40">🛎️ הגש מנה</button>
     </div>
   </div>
-
   <div id="combo" style="position:absolute;top:30%;left:0;right:0;text-align:center;font-weight:900;pointer-events:none;opacity:0;z-index:8"></div>
   <div id="msg" style="position:absolute;bottom:88px;left:14px;right:14px;text-align:center;font-size:12px;font-weight:700;pointer-events:none;opacity:0;transition:opacity .3s;z-index:8"></div>
   <div id="over" style="display:none;position:absolute;inset:0;background:rgba(12,8,32,.93);backdrop-filter:blur(6px);flex-direction:column;align-items:center;justify-content:center;gap:9px;text-align:center;padding:22px;z-index:10"></div>
@@ -84,6 +70,7 @@
 (function(){
 var R=document.getElementById('frp');
 var ING={PITA:{n:'פיתה',e:'🫓',c:'#E5C185'},FALAFEL:{n:'פלאפל',e:'🧆',c:'#A9744F'},SALAD:{n:'סלט',e:'🥗',c:'#5BC46A'},TAHINI:{n:'טחינה',e:'🍶',c:'#EBE3A0'},CHIPS:{n:"צ'יפס",e:'🍟',c:'#FFC94D'},SPICY:{n:'חריף',e:'🌶️',c:'#FF5A5A'}};
+var FILL=['FALAFEL','SALAD','TAHINI','CHIPS','SPICY'];
 var ORDERS=[['PITA','FALAFEL'],['PITA','FALAFEL','TAHINI'],['PITA','FALAFEL','SALAD'],['PITA','FALAFEL','SALAD','TAHINI'],['PITA','FALAFEL','CHIPS','TAHINI'],['PITA','FALAFEL','SALAD','TAHINI','SPICY']];
 var TYPES=[
  {t:'סטודנט',av:'🧑‍🎓',ph:'תוסיף סלט אחי 🙏',pat:15,tip:1.0,g:'#5C9DFF'},
@@ -102,13 +89,14 @@ var UPG=[
 var SAVE_KEY='falafel_rush_save';
 function loadSave(){try{return JSON.parse(localStorage.getItem(SAVE_KEY))||{}}catch(e){return {}}}
 function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({coins:S.coins,day:S.day,best:S.best,cleanStreak:S.cleanStreak,upg:UPG.map(function(u){return u.lv})}))}catch(e){}}
-
 var sv=loadSave();
 if(sv.upg)UPG.forEach(function(u,i){u.lv=sv.upg[i]||0});
-var S={coins:sv.coins||0,score:0,combo:0,time:60,rush:0,pita:[],custs:[],running:1,nid:0,day:sv.day||1,sel:null,goal:120,earnedToday:0,best:sv.best||0,walkToday:0,od:0,odActive:0,odTime:0,cleanStreak:sv.cleanStreak||0};
+var S={coins:sv.coins||0,score:0,combo:0,time:60,rush:0,pita:['PITA'],custs:[],running:1,nid:0,day:sv.day||1,sel:null,goal:120,earnedToday:0,best:sv.best||0,walkToday:0,od:0,odActive:0,odTime:0,cleanStreak:sv.cleanStreak||0};
 S.goal=Math.round(120*Math.pow(1.15,S.day-1));
 var $=function(i){return document.getElementById(i)};
 function up(id){return UPG.filter(function(u){return u.id===id})[0].lv}
+function freshPita(){S.pita=['PITA']}
+function selCust(){return S.custs.filter(function(c){return c.id===S.sel&&!c.leaving})[0]}
 
 var AC=null;function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}return AC}
 function beep(f,d,t,g){var c=ac();if(!c)return;var o=c.createOscillator(),v=c.createGain();o.type=t||'sine';o.frequency.value=f;v.gain.value=g||.1;o.connect(v);v.connect(c.destination);var tt=c.currentTime;v.gain.setValueAtTime(g||.1,tt);v.gain.exponentialRampToValueAtTime(.001,tt+d);o.start(tt);o.stop(tt+d)}
@@ -118,7 +106,6 @@ function sServe(cb){var n=[523,659,784,1046],sh=Math.min(cb*45,500);n.forEach(fu
 function sBuzz(){beep(110,.25,'square',.09)}
 function sStar(){[784,988,1318,1568].forEach(function(f,i){setTimeout(function(){beep(f,.2)},i*110)})}
 function sOD(){[660,880,660,880,1100].forEach(function(f,i){setTimeout(function(){beep(f,.12,'square',.08)},i*70)})}
-
 function msg(t,col){var m=$('msg');m.textContent=t;m.style.color=col||'#fff';m.style.opacity=1;clearTimeout(m._t);m._t=setTimeout(function(){m.style.opacity=0},1500)}
 function comboMult(){return 1+Math.min(S.combo,10)*0.1}
 function maxQ(){return 4+up('queue')}
@@ -128,60 +115,57 @@ function spawn(){
  var ty=TYPES[Math.floor(Math.random()*TYPES.length)],ord=ORDERS[Math.floor(Math.random()*ORDERS.length)];
  var dayMod=Math.max(.7,1-.03*(S.day-1)),patUp=1+up('pat')*.12;
  S.custs.push({id:++S.nid,ty:ty,ord:ord.slice(),pat:1,max:ty.pat*dayMod*patUp,leaving:0});
- if(S.sel===null)S.sel=S.custs[0].id;
  render();
 }
 
-// Ingredient buttons built ONCE (persistent DOM + handlers); render() only restyles
-// them. Rebuilding every frame used to swallow taps (node replaced mid-click).
 var binEls={};
 function addIngredient(k){
- if(!S.running||!S.sel){msg('בחר לקוח קודם 👆','#FFC94D');return}
- if(k!=='PITA'&&S.pita.indexOf('PITA')<0){msg('התחל מפיתה 🫓','#FFC94D');return}
+ if(!selCust()){msg('מחכים ללקוח... 🧎','#FFC94D');return}
  S.pita.push(k);sPlop();
- var pp=$('pita');pp.style.transform='scale(1.06)';pp.style.boxShadow='0 0 0 2px #FFD27A,0 0 20px #FFD27A66';
- setTimeout(function(){pp.style.transform='';pp.style.boxShadow=''},190);
+ var pp=$('pita');pp.style.transform='scale(1.05)';pp.style.boxShadow='0 0 0 2px #FFD27A,0 0 20px #FFD27A66';
+ setTimeout(function(){pp.style.transform='';pp.style.boxShadow=''},170);
  render();
 }
 function buildBins(){
  var b=$('bins');b.innerHTML='';binEls={};
- Object.keys(ING).forEach(function(k){
+ FILL.forEach(function(k){
   var el=document.createElement('button');el.className='bin';
-  el.innerHTML='<div style="font-size:22px;filter:drop-shadow(0 2px 3px #0008);pointer-events:none">'+ING[k].e+'</div><div style="font-size:9px;font-weight:800;margin-top:2px;pointer-events:none">'+ING[k].n+'</div>';
+  el.innerHTML='<div style="font-size:23px;filter:drop-shadow(0 2px 3px #0008);pointer-events:none">'+ING[k].e+'</div><div style="font-size:9px;font-weight:800;margin-top:2px;pointer-events:none">'+ING[k].n+'</div>';
   el.addEventListener('click',function(){addIngredient(k)});
   binEls[k]=el;b.appendChild(el);
  });
  updateBins();
 }
 function updateBins(){
- var hasPita=S.pita.indexOf('PITA')>=0;
- Object.keys(ING).forEach(function(k){
-  var allow=(k==='PITA'||hasPita)&&!!S.sel,el=binEls[k];if(!el)return;
-  el.style.cssText='background:'+(allow?'linear-gradient(180deg,#2C2742,#211C36)':'rgba(255,255,255,.05)')+';border:1.5px solid '+(allow?ING[k].c+'88':'rgba(255,255,255,.1)')+';border-radius:13px;padding:9px 2px;color:#fff;opacity:'+(allow?1:.45)+';box-shadow:'+(allow?'0 3px 0 '+ING[k].c+'33,0 0 14px '+ING[k].c+'22':'none');
+ var on=!!selCust();
+ FILL.forEach(function(k){var el=binEls[k];if(!el)return;
+  el.style.cssText='background:'+(on?'linear-gradient(180deg,#2C2742,#211C36)':'rgba(255,255,255,.05)')+';border:1.5px solid '+(on?ING[k].c+'88':'rgba(255,255,255,.1)')+';border-radius:13px;padding:9px 2px;color:#fff;opacity:'+(on?1:.5)+';box-shadow:'+(on?'0 3px 0 '+ING[k].c+'33,0 0 14px '+ING[k].c+'22':'none');
  });
 }
 
 function render(){
+ if(!selCust()){var alive=S.custs.filter(function(c){return !c.leaving});S.sel=alive.length?alive[0].id:null}
  var q=$('queue');q.innerHTML='';
  S.custs.forEach(function(c){
   var sel=c.id===S.sel,pcol=c.pat>.6?'#28E08A':c.pat>.3?'#FFC94D':'#FF5A5A',panic=c.pat<=.2&&!S.odActive;
   var face=c.leaving===1?'😍':c.leaving===2?'😡':c.pat>.5?c.ty.av:c.pat>.25?'😐':'😣';
   var card=document.createElement('div');
-  card.style.cssText='flex:0 0 134px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform .5s,opacity .5s;'+(c.leaving===1?'transform:translateY(-180px);opacity:0;':c.leaving===2?'transform:translateX(460px) rotate(8deg);opacity:0;':sel?'transform:translateY(-6px) scale(1.03);':'');
+  card.style.cssText='flex:0 0 134px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform .5s,opacity .5s;'+(c.leaving===1?'transform:translateY(-180px);opacity:0;':c.leaving===2?'transform:translateX(460px) rotate(8deg);opacity:0;':sel?'transform:translateY(-6px) scale(1.04);':'opacity:.82;');
   if(panic&&!c.leaving)card.style.animation='shk .3s infinite';
   card.innerHTML=
+   (sel?'<div style="font-size:8.5px;font-weight:800;color:#FFD27A;margin-bottom:2px">▼ מגישים לו</div>':'<div style="height:13px"></div>')+
    '<div style="background:#fff;color:#2a2a2a;border-radius:13px;padding:7px 8px;font-size:10px;text-align:center;font-weight:700;min-height:34px;box-shadow:0 4px 10px #0005;border:2px solid '+(sel?'#FFD27A':c.ty.vip?'#FFB300':'transparent')+'">'+(c.leaving===2?'😡 לא מחכה!':'"'+c.ty.ph+'"')+
    '<div style="margin-top:4px">'+c.ord.map(function(k){return '<span style="display:inline-block;width:19px;height:19px;line-height:19px;border-radius:50%;background:'+ING[k].c+'2e;border:1.5px solid '+ING[k].c+';font-size:9px;margin:0 1px">'+ING[k].e+'</span>'}).join('')+'</div></div>'+
-   '<div style="position:relative;width:66px;height:66px;border-radius:50%;margin:9px 0 5px;display:flex;align-items:center;justify-content:center;font-size:34px;background:radial-gradient(circle at 50% 35%,'+c.ty.g+'cc,'+c.ty.g+'33);box-shadow:0 0 18px '+(sel?c.ty.g+'aa':c.ty.g+'44')+',inset 0 -4px 8px #0004;border:2px solid '+(sel?'#FFD27A':c.ty.g+'88')+'">'+face+(c.ty.vip?'<span style="position:absolute;top:-15px;font-size:17px">👑</span>':'')+'</div>'+
+   '<div style="position:relative;width:64px;height:64px;border-radius:50%;margin:8px 0 5px;display:flex;align-items:center;justify-content:center;font-size:33px;background:radial-gradient(circle at 50% 35%,'+c.ty.g+'cc,'+c.ty.g+'33);box-shadow:0 0 18px '+(sel?c.ty.g+'aa':c.ty.g+'44')+',inset 0 -4px 8px #0004;border:2px solid '+(sel?'#FFD27A':c.ty.g+'88')+'">'+face+(c.ty.vip?'<span style="position:absolute;top:-15px;font-size:17px">👑</span>':'')+'</div>'+
    '<div class="glass" style="width:100%;border-radius:12px;padding:6px 8px;border-color:'+(sel?'#FFD27A':'rgba(255,255,255,.1)')+'">'+
    '<div style="font-size:10px;font-weight:800;color:'+(c.ty.vip?'#FFD27A':'#fff')+';text-align:center">'+c.ty.t+'</div>'+
    '<div style="height:7px;background:rgba(255,255,255,.12);border-radius:4px;margin-top:5px;overflow:hidden"><div style="height:100%;width:'+(c.pat*100)+'%;background:'+pcol+';border-radius:4px;box-shadow:0 0 6px '+pcol+';'+(panic?'animation:flash .25s infinite':'')+'"></div></div></div>';
-  card.onclick=function(){if(!c.leaving){S.sel=c.id;render()}};
+  card.onclick=function(){if(!c.leaving){S.sel=c.id;freshPita();render()}};
   q.appendChild(card);
  });
  var p=$('pita');
- if(!S.pita.length){p.innerHTML='<span style="font-size:11px;color:#888">'+(S.sel?'הרכב פיתה 👇':'בחר לקוח 👆')+'</span>'}
- else{p.innerHTML=S.pita.map(function(k){return '<span style="background:'+ING[k].c+';color:#2a2a2a;border-radius:9px;padding:5px 9px;font-size:12px;font-weight:800;box-shadow:0 2px 5px #0004;animation:pop .25s">'+ING[k].e+' '+ING[k].n+'</span>'}).join('')}
+ if(!selCust()){p.innerHTML='<span style="font-size:11px;color:#888">מחכים ללקוח הבא... 🧎</span>'}
+ else{p.innerHTML=S.pita.map(function(k){var base=k==='PITA';return '<span style="background:'+ING[k].c+';color:#2a2a2a;border-radius:9px;padding:5px 9px;font-size:12px;font-weight:800;box-shadow:0 2px 5px #0004;'+(base?'':'animation:pop .25s')+'">'+ING[k].e+' '+ING[k].n+(base?' (בסיס)':'')+'</span>'}).join('')}
  updateBins();
  $('coins').textContent=S.coins;$('score').textContent=S.score;$('time').textContent=Math.ceil(S.time);
  $('goalt').textContent=S.goal;$('walk').textContent=S.walkToday;
@@ -207,8 +191,7 @@ function burst(n,emo){
  var cc=$('coins');cc.style.transition='transform .15s';cc.style.transform='scale(1.6)';setTimeout(function(){cc.style.transform=''},150);
 }
 function showCombo(){
- if(S.combo<2)return;var c=$('combo');
- var col=S.combo>=10?'#C94DFF':S.combo>=5?'#FF4D6A':'#FFB300';
+ if(S.combo<2)return;var c=$('combo');var col=S.combo>=10?'#C94DFF':S.combo>=5?'#FF4D6A':'#FFB300';
  c.innerHTML='<span style="display:inline-block;background:'+col+';color:#fff;padding:8px 20px;border-radius:16px;font-size:'+(18+Math.min(S.combo,13))+'px;box-shadow:0 0 24px '+col+'cc">קומבו ×'+S.combo+' 🔥 '+comboMult().toFixed(1)+'×</span>';
  c.style.opacity=1;c.style.animation='none';void c.offsetWidth;c.style.animation='pop .3s';setTimeout(function(){c.style.opacity=0},550);
  var e=$('edge'),lvl=S.combo>=10?'#C94DFF':S.combo>=5?'#FF4D6A':S.combo>=3?'#FFB300':null;
@@ -216,11 +199,8 @@ function showCombo(){
 }
 
 $('odbtn').onclick=function(){if(S.od>=1&&!S.odActive&&S.running){S.odActive=1;S.odTime=5;S.od=0;sOD();burst(8,'🔥');msg('🔥 מצב אש! סבלנות קפואה, כפל כפול!','#FFD27A')}};
-
 function doServe(){
- if(!S.running||!S.sel){msg('בחר לקוח 👆','#FFC94D');return}
- var c=S.custs.filter(function(x){return x.id===S.sel&&!x.leaving})[0];
- if(!c){msg('בחר לקוח 👆','#FFC94D');return}
+ var c=selCust();if(!c){msg('מחכים ללקוח 🧎','#FFC94D');return}
  var need={},got={};c.ord.forEach(function(k){need[k]=(need[k]||0)+1});S.pita.forEach(function(k){got[k]=(got[k]||0)+1});
  var ok=Object.keys(need).length===Object.keys(got).length&&Object.keys(need).every(function(k){return need[k]===got[k]});
  if(ok){
@@ -228,14 +208,14 @@ function doServe(){
   S.coins+=amt;S.earnedToday+=amt;S.combo++;S.score+=amt*10+55+S.combo*20;
   S.od=Math.min(1,S.od+(0.12+0.04*Math.min(S.combo,8))*(1+up('od')*.3));
   sServe(S.combo);sCoin();burst(Math.ceil(amt/8));showCombo();
-  c.leaving=1;render();
-  var fid=c.id;setTimeout(function(){S.custs=S.custs.filter(function(x){return x.id!==fid});if(S.custs.length)S.sel=S.custs[0].id;else{S.sel=null;spawn()}render()},520);
+  c.leaving=1;freshPita();render();
+  var fid=c.id;setTimeout(function(){S.custs=S.custs.filter(function(x){return x.id!==fid});if(!S.custs.length)spawn();render()},520);
   msg('מושלם! +'+amt+' 🪙'+(S.odActive?' 🔥':''),'#28E08A');
- }else{sBuzz();S.combo=0;S.score=Math.max(0,S.score-12);var pp=$('pita');pp.style.animation='shk .3s';setTimeout(function(){pp.style.animation=''},300);msg('זה לא מה שהזמין! ❌','#FF5A5A')}
- S.pita=[];render();
+ }else{sBuzz();S.combo=0;S.score=Math.max(0,S.score-12);var pp=$('pita');pp.style.animation='shk .3s';setTimeout(function(){pp.style.animation=''},300);msg('זה לא בדיוק ההזמנה ❌ נסה שוב','#FF5A5A');freshPita()}
+ render();
 }
 $('serve').onclick=doServe;
-$('trash').onclick=function(){if(!S.pita.length)return;S.pita=[];sBuzz();render();msg('נזרק לפח 🗑️','#FFC94D')};
+$('trash').onclick=function(){if(S.pita.length<=1)return;freshPita();sBuzz();render();msg('ניקינו את הפיתה 🗑️','#FFC94D')};
 
 var last=Date.now();
 function loop(){
@@ -247,20 +227,18 @@ function loop(){
  if(left.length){left.forEach(function(c){c.leaving=2});S.combo=0;S.walkToday++;sBuzz();
   S.custs.forEach(function(c){if(!c.leaving)c.pat=Math.max(0.05,c.pat-0.18)});
   msg('לקוח עזב! 😡 כל התור התעצבן!','#FF5A5A');render();
-  setTimeout(function(){var ids=left.map(function(x){return x.id});S.custs=S.custs.filter(function(x){return ids.indexOf(x.id)<0});if(S.sel&&!S.custs.filter(function(x){return x.id===S.sel}).length)S.sel=S.custs.length?S.custs[0].id:null;render()},480)}
- if(Math.random()<(S.rush?0.032:0.015)*dt*60)spawn();
+  setTimeout(function(){var ids=left.map(function(x){return x.id});S.custs=S.custs.filter(function(x){return ids.indexOf(x.id)<0});render()},480)}
+ if(!S.custs.length){spawn()}else if(Math.random()<(S.rush?0.032:0.016)*dt*60)spawn();
  render();
  if(S.time<=0){endDay();return}
  requestAnimationFrame(loop);
 }
 
 function endDay(){
- S.running=0;S.odActive=0;
- var perfect=S.walkToday===0;
+ S.running=0;S.odActive=0;var perfect=S.walkToday===0;
  if(perfect){var bonus=Math.round(S.earnedToday*0.5);S.earnedToday+=bonus;S.coins+=bonus;S.cleanStreak++}else S.cleanStreak=0;
  var stars=S.earnedToday>=S.goal*2?3:S.earnedToday>=S.goal*1.4?2:S.earnedToday>=S.goal?1:0,win=stars>=1;
- if(S.score>S.best)S.best=S.score;if(win)sStar();else sBuzz();
- persist();
+ if(S.score>S.best)S.best=S.score;if(win)sStar();else sBuzz();persist();
  var o=$('over');o.style.display='flex';
  var shop=UPG.map(function(u){var cost=Math.round(u.base*Math.pow(1.6,u.lv)),maxed=u.lv>=u.max,can=S.coins>=cost&&!maxed;
   return '<button class="upbtn" data-id="'+u.id+'" '+(can?'':'disabled')+' style="display:flex;align-items:center;gap:9px;width:100%;background:'+(can?'rgba(0,229,255,.08)':'rgba(255,255,255,.04)')+';border:1px solid '+(can?'#00E5FF55':'rgba(255,255,255,.08)')+';border-radius:12px;padding:10px;color:#fff;text-align:right;opacity:'+(maxed?.5:1)+'">'+
@@ -276,7 +254,7 @@ function endDay(){
   '<div style="width:100%;max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:7px;margin:4px 0"><div style="font-size:11px;color:#FFD27A;font-weight:800">🛠️ חנות שדרוגים</div>'+shop+'</div>'+
   '<button id="again" style="background:linear-gradient(180deg,'+(win?'#28E08A,#10A862':'#3FC9FF,#1E9BD8')+');color:#053d24;font-size:16px;font-weight:900;padding:13px 28px;border-radius:14px;box-shadow:0 5px 0 '+(win?'#0a6e40':'#15688f')+'">'+(win?'יום '+(S.day+1)+' ▶️':'נסה שוב 🔄')+'</button>';
  o.querySelectorAll('.upbtn').forEach(function(btn){btn.onclick=function(){var u=UPG.filter(function(x){return x.id===btn.dataset.id})[0],cost=Math.round(u.base*Math.pow(1.6,u.lv));if(S.coins>=cost&&u.lv<u.max){S.coins-=cost;u.lv++;sCoin();persist();endDay()}}});
- $('again').onclick=function(){if(win)S.day++;S.earnedToday=0;S.score=0;S.time=60;S.combo=0;S.pita=[];S.custs=[];S.sel=null;S.running=1;S.walkToday=0;S.od=0;S.odActive=0;S.goal=Math.round(120*Math.pow(1.15,S.day-1));persist();o.style.display='none';spawn();spawn();last=Date.now();loop()};
+ $('again').onclick=function(){if(win)S.day++;S.earnedToday=0;S.score=0;S.time=60;S.combo=0;freshPita();S.custs=[];S.sel=null;S.running=1;S.walkToday=0;S.od=0;S.odActive=0;S.goal=Math.round(120*Math.pow(1.15,S.day-1));persist();o.style.display='none';spawn();spawn();last=Date.now();loop()};
 }
 
 buildBins();spawn();spawn();render();loop();
