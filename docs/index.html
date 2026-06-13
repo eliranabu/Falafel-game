@@ -132,19 +132,32 @@ function spawn(){
  render();
 }
 
-function bins(){
- var b=$('bins');b.innerHTML='';var hasPita=S.pita.indexOf('PITA')>=0;
+// Ingredient buttons built ONCE (persistent DOM + handlers); render() only restyles
+// them. Rebuilding every frame used to swallow taps (node replaced mid-click).
+var binEls={};
+function addIngredient(k){
+ if(!S.running||!S.sel){msg('בחר לקוח קודם 👆','#FFC94D');return}
+ if(k!=='PITA'&&S.pita.indexOf('PITA')<0){msg('התחל מפיתה 🫓','#FFC94D');return}
+ S.pita.push(k);sPlop();
+ var pp=$('pita');pp.style.transform='scale(1.06)';pp.style.boxShadow='0 0 0 2px #FFD27A,0 0 20px #FFD27A66';
+ setTimeout(function(){pp.style.transform='';pp.style.boxShadow=''},190);
+ render();
+}
+function buildBins(){
+ var b=$('bins');b.innerHTML='';binEls={};
  Object.keys(ING).forEach(function(k){
-  var allow=(k==='PITA'||hasPita)&&S.sel;
   var el=document.createElement('button');el.className='bin';
-  el.style.cssText='background:'+(allow?'linear-gradient(180deg,#2C2742,#211C36)':'rgba(255,255,255,.04)')+';border:1.5px solid '+(allow?ING[k].c+'88':'rgba(255,255,255,.08)')+';border-radius:13px;padding:9px 2px;color:#fff;opacity:'+(allow?1:.4)+';box-shadow:'+(allow?'0 3px 0 '+ING[k].c+'33,0 0 14px '+ING[k].c+'22':'none');
-  el.innerHTML='<div style="font-size:22px;filter:drop-shadow(0 2px 3px #0008)">'+ING[k].e+'</div><div style="font-size:9px;font-weight:800;margin-top:2px">'+ING[k].n+'</div>';
-  el.onclick=function(){
-   if(!S.running||!S.sel){msg('בחר לקוח קודם 👆','#FFC94D');return}
-   if(k!=='PITA'&&S.pita.indexOf('PITA')<0){msg('התחל מפיתה 🫓','#FFC94D');return}
-   S.pita.push(k);sPlop();var pp=$('pita');pp.style.transform='scale(1.06)';pp.style.boxShadow='0 0 0 2px #FFD27A,0 0 20px #FFD27A66';setTimeout(function(){pp.style.transform='';pp.style.boxShadow=''},190);render();
-  };
-  b.appendChild(el);
+  el.innerHTML='<div style="font-size:22px;filter:drop-shadow(0 2px 3px #0008);pointer-events:none">'+ING[k].e+'</div><div style="font-size:9px;font-weight:800;margin-top:2px;pointer-events:none">'+ING[k].n+'</div>';
+  el.addEventListener('click',function(){addIngredient(k)});
+  binEls[k]=el;b.appendChild(el);
+ });
+ updateBins();
+}
+function updateBins(){
+ var hasPita=S.pita.indexOf('PITA')>=0;
+ Object.keys(ING).forEach(function(k){
+  var allow=(k==='PITA'||hasPita)&&!!S.sel,el=binEls[k];if(!el)return;
+  el.style.cssText='background:'+(allow?'linear-gradient(180deg,#2C2742,#211C36)':'rgba(255,255,255,.05)')+';border:1.5px solid '+(allow?ING[k].c+'88':'rgba(255,255,255,.1)')+';border-radius:13px;padding:9px 2px;color:#fff;opacity:'+(allow?1:.45)+';box-shadow:'+(allow?'0 3px 0 '+ING[k].c+'33,0 0 14px '+ING[k].c+'22':'none');
  });
 }
 
@@ -169,7 +182,7 @@ function render(){
  var p=$('pita');
  if(!S.pita.length){p.innerHTML='<span style="font-size:11px;color:#888">'+(S.sel?'הרכב פיתה 👇':'בחר לקוח 👆')+'</span>'}
  else{p.innerHTML=S.pita.map(function(k){return '<span style="background:'+ING[k].c+';color:#2a2a2a;border-radius:9px;padding:5px 9px;font-size:12px;font-weight:800;box-shadow:0 2px 5px #0004;animation:pop .25s">'+ING[k].e+' '+ING[k].n+'</span>'}).join('')}
- bins();
+ updateBins();
  $('coins').textContent=S.coins;$('score').textContent=S.score;$('time').textContent=Math.ceil(S.time);
  $('goalt').textContent=S.goal;$('walk').textContent=S.walkToday;
  $('goalbar').style.width=Math.min(100,S.earnedToday/S.goal*100)+'%';
@@ -266,7 +279,7 @@ function endDay(){
  $('again').onclick=function(){if(win)S.day++;S.earnedToday=0;S.score=0;S.time=60;S.combo=0;S.pita=[];S.custs=[];S.sel=null;S.running=1;S.walkToday=0;S.od=0;S.odActive=0;S.goal=Math.round(120*Math.pow(1.15,S.day-1));persist();o.style.display='none';spawn();spawn();last=Date.now();loop()};
 }
 
-spawn();spawn();render();loop();
+buildBins();spawn();spawn();render();loop();
 })();
 </script>
 </body>
