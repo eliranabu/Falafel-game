@@ -3,6 +3,7 @@ package com.eliranabu.falafelrush.ui.game
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -70,6 +71,61 @@ fun GameplayScreen(viewModel: GameViewModel, state: GameUiState) {
             onExitClicked = { viewModel.setScreen(GameScreen.START_SCREEN) },
             onPauseClicked = { viewModel.togglePause() }
         )
+
+        // DAILY GOAL BAR + FIRE OVERDRIVE BUTTON
+        val goalProgress = (state.revenueEarnedToday.toFloat() / state.dailyGoal).coerceIn(0f, 1f)
+        Column(modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("יעד היום: ${state.dailyGoal} 🪙", color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                val st = when {
+                    state.revenueEarnedToday >= state.dailyGoal * 2 -> "★★★"
+                    state.revenueEarnedToday >= (state.dailyGoal * 1.4f).toInt() -> "★★☆"
+                    state.revenueEarnedToday >= state.dailyGoal -> "★☆☆"
+                    else -> "☆☆☆"
+                }
+                Text(st, color = FalafelRushTheme.DeepGold, fontSize = 11.sp, letterSpacing = 2.sp)
+            }
+            LinearProgressIndicator(
+                progress = { goalProgress },
+                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                color = FalafelRushTheme.GlowGreen,
+                trackColor = Color.White.copy(alpha = 0.1f)
+            )
+
+            // Fire overdrive bar — tap when full
+            val odReady = state.overdriveMeter >= 1f && !state.overdriveActive
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 5.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color(0xFF231F32))
+                    .border(1.dp, if (odReady || state.overdriveActive) FalafelRushTheme.HotOrange else FalafelRushTheme.HotOrange.copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+                    .then(if (odReady) Modifier.clickable { viewModel.activateOverdrive() } else Modifier)
+                    .height(26.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(if (state.overdriveActive) 1f else state.overdriveMeter)
+                        .background(FalafelRushTheme.HotOrange.copy(alpha = if (state.overdriveActive) 0.6f else 0.25f))
+                )
+                Text(
+                    text = when {
+                        state.overdriveActive -> "🔥 אש פעילה! ${state.overdriveSecondsLeft.toInt() + 1}ש'"
+                        odReady -> "🔥 לחץ להפעלת מצב אש!"
+                        else -> "🔥 בר אש — ${(state.overdriveMeter * 100).toInt()}%"
+                    },
+                    color = if (odReady) FalafelRushTheme.BrightGold else Color(0xFFFF8A65),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
+        }
 
         // Active Daily Event Banner during gameplay
         if (state.activeEvent != DailyEvent.NORMAL) {

@@ -157,7 +157,16 @@ data class GameUiState(
     val isRushHour: Boolean = false, // Rush hour triggers intense events
     val isPaused: Boolean = false,
     val showTutorial: Boolean = false,
-    
+
+    // Daily goal / star objective (web-tested progression spine)
+    val dailyGoal: Int = 120,
+    val dayStars: Int = 0,
+
+    // "Fire" overdrive ability: fills on serves, freezes patience + doubles pay for 5s
+    val overdriveMeter: Float = 0f, // 0..1
+    val overdriveActive: Boolean = false,
+    val overdriveSecondsLeft: Float = 0f,
+
     // Day Ledger Stats
     val servedCountToday: Int = 0,
     val failedCountToday: Int = 0, // trash/errors
@@ -313,6 +322,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(feedbackMessage = msg) }
     }
 
+    // Activate the "Fire" overdrive: 5s of frozen patience + doubled earnings. Costs a full meter.
+    fun activateOverdrive() {
+        val s = _uiState.value
+        if (s.overdriveMeter >= 1f && !s.overdriveActive && !s.isPaused) {
+            _uiState.update { it.copy(overdriveActive = true, overdriveSecondsLeft = 5f, overdriveMeter = 0f) }
+            soundManager.play(SoundId.RUSH_ALARM)
+            showFeedback("🔥 מצב אש! סבלנות קפואה וטיפים כפולים!")
+        }
+    }
+
     // Pause / resume the live day (timer, patience decay and spawning all freeze)
     fun togglePause() {
         _uiState.update { it.copy(isPaused = !it.isPaused) }
@@ -347,6 +366,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         
         val nextDayEvent = getEventForDay(_uiState.value.saveState.currentDay)
         val needsTutorial = !_uiState.value.saveState.hasSeenTutorial
+        // Single difficulty axis: the daily revenue goal climbs ~15% per day
+        val goal = (120 * Math.pow(1.15, (_uiState.value.saveState.currentDay - 1).toDouble())).toInt()
 
         _uiState.update {
             it.copy(
@@ -354,6 +375,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 activeEvent = nextDayEvent,
                 isPaused = needsTutorial, // freeze the day until the tutorial is dismissed
                 showTutorial = needsTutorial,
+                dailyGoal = goal,
+                dayStars = 0,
+                overdriveMeter = 0f,
+                overdriveActive = false,
+                overdriveSecondsLeft = 0f,
                 dayTimeRemainingSec = 120,
                 activeCustomers = emptyList(),
                 departingCustomers = emptyList(),
@@ -424,9 +450,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 delay(100) // update patience/timers frequently for fluid movement at 60fps
                 if (_uiState.value.isPaused) continue // no decay or spawns while paused
 
-                // Decay patience of existing customers
+                // Tick the overdrive countdown; patience is frozen while it is active
+                val odActive = _uiState.value.overdriveActive
+                if (odActive) {
+                    val left = _uiState.value.overdriveSecondsLeft - 0.1f
+                    if (left <= 0f) {
+                        _uiState.update { it.copy(overdriveActive = false, overdriveSecondsLeft = 0f) }
+                        showFeedback("מצב אש נגמר... חזרה לשגרה 😌")
+                    } else {
+                        _uiState.update { it.copy(overdriveSecondsLeft = left) }
+                    }
+                }
+
+                // Decay patience of existing customers (frozen during overdrive)
                 val leavers = mutableListOf<GameCustomer>()
                 val updatedCustomers = _uiState.value.activeCustomers.mapNotNull { customer ->
+                    if (_uiState.value.overdriveActive) return@mapNotNull customer
                     // Speeds up decay unless patience/speed upgrade level is high
                     val upgradeSlowdown = 1.0f + (_uiState.value.saveState.patienceUpgradeLevel * 0.15f)
                     val eventPatienceMod = _uiState.value.activeEvent.patienceModifier
@@ -446,12 +485,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
                 if (leavers.isNotEmpty()) {
                     soundManager.play(SoundId.ANGRY_BUZZ)
-                    showFeedback("אוי לא! לקוח התייאש מההמתנה ועזב! 😡")
+                    showFeedback("לקוח התייאש ועזב! 😡 כל התור התעצבן!")
                 }
+
+                // QUEUE-ANGER CONTAGION: a walkout sours everyone still waiting (-18% patience each)
+                val contagious = if (leavers.isNotEmpty()) {
+                    updatedCustomers.map { it.copy(currentPatience = (it.currentPatience - 0.18f).coerceAtLeast(0.05f)) }
+                } else updatedCustomers
 
                 _uiState.update {
                     it.copy(
-                        activeCustomers = updatedCustomers,
+                        activeCustomers = contagious,
                         departingCustomers = it.departingCustomers + leavers.map { c ->
                             DepartingCustomer(c.copy(currentPatience = 0f), DepartReason.ANGRY)
                         }
@@ -653,10 +697,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val isRush = _uiState.value.isRushHour
             val rushMultiplier = if (isRush) 1.5f else 1.0f
             val eventMultiplier = _uiState.value.activeEvent.priceModifier
-            
-            val totalEarned = ((basePay + speedBonus + premiumVipTip) * targetCustomer.tipScale * targetCustomer.type.tipMultiplier * marketingMultiplier * rushMultiplier * eventMultiplier).toInt()
-            
+
             val newStreak = _uiState.value.comboStreak + 1
+            // Combo now drives income (web-tested): up to +100% at a 10-streak.
+            val comboMultiplier = 1f + (newStreak.coerceAtMost(10) * 0.1f)
+            val overdriveMultiplier = if (_uiState.value.overdriveActive) 2f else 1f
+
+            val totalEarned = ((basePay + speedBonus + premiumVipTip) * targetCustomer.tipScale * targetCustomer.type.tipMultiplier * marketingMultiplier * rushMultiplier * eventMultiplier * comboMultiplier * overdriveMultiplier).toInt()
+
+            // Fill the Fire meter — more per serve as the combo grows
+            val meterGain = 0.12f + 0.04f * newStreak.coerceAtMost(8)
             
             _uiState.update {
                 it.copy(
@@ -667,6 +717,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     servedCountToday = it.servedCountToday + 1,
                     revenueEarnedToday = it.revenueEarnedToday + totalEarned,
                     comboStreak = newStreak,
+                    overdriveMeter = if (it.overdriveActive) it.overdriveMeter else (it.overdriveMeter + meterGain).coerceAtMost(1f),
                     feedbackMessage = "סרביס מושלם! ${targetCustomer.name} נהנה ונתן טיפ שווה של $totalEarned מטבעות! 💰"
                 )
             }
@@ -713,17 +764,35 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val todayServed = _uiState.value.servedCountToday
         val todayFailed = _uiState.value.failedCountToday
         val todayLeft = _uiState.value.impatientLeftToday
-        val todayCoins = _uiState.value.revenueEarnedToday
+        val baseCoins = _uiState.value.revenueEarnedToday
         val currentDayNum = _uiState.value.saveState.currentDay
+        val goal = _uiState.value.dailyGoal
+
+        // Perfect day (zero walkouts) pays a +50% bonus and extends the clean streak
+        val isPerfect = todayLeft == 0 && todayServed > 0
+        val perfectBonus = if (isPerfect) (baseCoins * 0.5f).toInt() else 0
+        val todayCoins = baseCoins + perfectBonus
+
+        // Star rating against the daily goal: 1 = goal, 2 = goal*1.4, 3 = goal*2
+        val stars = when {
+            todayCoins >= goal * 2 -> 3
+            todayCoins >= (goal * 1.4f).toInt() -> 2
+            todayCoins >= goal -> 1
+            else -> 0
+        }
+        val chefScore = (baseCoins * 10) + (todayServed * 55) - (todayFailed * 12)
+        val newCleanStreak = if (isPerfect) _uiState.value.saveState.cleanStreak + 1 else 0
 
         soundManager.play(SoundId.DAY_END_JINGLE)
-        _uiState.update { it.copy(currentScreen = GameScreen.DAY_SUMMARY) }
+        _uiState.update { it.copy(currentScreen = GameScreen.DAY_SUMMARY, dayStars = stars, revenueEarnedToday = todayCoins) }
 
         viewModelScope.launch {
             // Save newly-earned cash directly inside Room Database!
             val updatedSave = _uiState.value.saveState.copy(
                 totalCoins = _uiState.value.saveState.totalCoins + todayCoins,
-                currentDay = currentDayNum + 1
+                currentDay = currentDayNum + 1,
+                cleanStreak = newCleanStreak,
+                bestChefScore = maxOf(_uiState.value.saveState.bestChefScore, chefScore)
             )
             repository.updateSaveState(updatedSave)
 

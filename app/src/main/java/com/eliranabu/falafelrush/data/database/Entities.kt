@@ -14,7 +14,9 @@ data class GameSaveState(
     val marketingUpgradeLevel: Int = 1,  // Generates higher tips
     val autoSauceUpgradeLevel: Int = 0,   // Auto-adds Tahini if true/level > 0
     val soundEffectsEnabled: Boolean = true,
-    val hasSeenTutorial: Boolean = false
+    val hasSeenTutorial: Boolean = false,
+    val cleanStreak: Int = 0,            // consecutive perfect (zero-walkout) days
+    val bestChefScore: Int = 0           // all-time best daily chef score
 )
 
 @Entity(tableName = "customer_reviews")

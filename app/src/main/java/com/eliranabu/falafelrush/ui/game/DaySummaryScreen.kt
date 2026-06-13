@@ -56,6 +56,26 @@ fun DaySummaryScreen(viewModel: GameViewModel, state: GameUiState) {
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 4.dp)
             )
+
+            // Star rating vs the daily goal + perfect-day badge
+            Text(
+                text = "★".repeat(state.dayStars) + "☆".repeat(3 - state.dayStars),
+                color = FalafelRushTheme.DeepGold,
+                fontSize = 30.sp,
+                letterSpacing = 6.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+            )
+            Text(
+                text = if (state.dayStars == 0) "לא הגעת ליעד היומי 😞"
+                else if (state.impatientLeftToday == 0) "🌟 יום מושלם! בונוס +50% · רצף נקי: ${state.saveState.cleanStreak}"
+                else "יעד הושג! ${state.dayStars} כוכבים",
+                color = if (state.dayStars == 0) FalafelRushTheme.HotOrange else FalafelRushTheme.GlowGreen,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(top = 2.dp)
+            )
         }
 
         // Financial ledger card
